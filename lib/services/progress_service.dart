@@ -8,6 +8,7 @@ class ProgressService {
 
   static Future<void> saveQuizResult({
     required String subjectId,
+    required String topicId,
     required int answered,
     required int correct,
   }) async {
@@ -18,7 +19,7 @@ class ProgressService {
         .collection('users')
         .doc(userId)
         .collection('progress')
-        .doc(subjectId);
+        .doc('${subjectId}_$topicId');
 
     final snapshot = await docRef.get();
 
@@ -29,11 +30,15 @@ class ProgressService {
       await docRef.update({
         'answered': prevAnswered + answered,
         'correct': prevCorrect + correct,
+        'subjectId': subjectId,
+        'topicId': topicId,
       });
     } else {
       await docRef.set({
         'answered': answered,
         'correct': correct,
+        'subjectId': subjectId,
+        'topicId': topicId,
       });
     }
   }
@@ -46,6 +51,44 @@ class ProgressService {
         .collection('users')
         .doc(userId)
         .collection('progress')
+        .snapshots();
+  }
+
+  static Future<void> saveQuizAttempt({
+    required String subjectId,
+    required String subjectName,
+    required String topicId,
+    required String topicName,
+    required List<Map<String, dynamic>> questionsData,
+  }) async {
+    final userId = _userId;
+    if (userId == null) return;
+
+    final correct = questionsData
+        .where((q) => q['selectedIndex'] == q['correctIndex'])
+        .length;
+
+    await _db.collection('users').doc(userId).collection('results').add({
+      'subjectId': subjectId,
+      'subjectName': subjectName,
+      'topicId': topicId,
+      'topicName': topicName,
+      'answered': questionsData.length,
+      'correct': correct,
+      'questions': questionsData,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  static Stream<QuerySnapshot> getResultsStream() {
+    final userId = _userId;
+    if (userId == null) return const Stream.empty();
+
+    return _db
+        .collection('users')
+        .doc(userId)
+        .collection('results')
+        .orderBy('timestamp', descending: true)
         .snapshots();
   }
 }

@@ -10,18 +10,79 @@ class Question {
     required this.options,
     required this.correctIndex,
   });
+
+  factory Question.fromFirestore(String id, Map<String, dynamic> data) {
+    return Question(
+      id: id,
+      text: data['text'] ?? '',
+      options: List<String>.from(data['options'] ?? []),
+      correctIndex: data['correctIndex'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'text': text,
+      'options': options,
+      'correctIndex': correctIndex,
+    };
+  }
+}
+
+class Topic {
+  final String id;
+  final String name;
+  final int order;
+
+  const Topic({
+    required this.id,
+    required this.name,
+    required this.order,
+  });
+
+  factory Topic.fromFirestore(String id, Map<String, dynamic> data) {
+    return Topic(
+      id: id,
+      name: data['name'] ?? '',
+      order: data['order'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'name': name,
+      'order': order,
+    };
+  }
 }
 
 class Subject {
   final String id;
   final String name;
   final String icon;
-  final List<Question> questions;
+  final int order;
 
   const Subject({
     required this.id,
     required this.name,
     required this.icon,
-    required this.questions,
+    required this.order,
   });
+
+  factory Subject.fromFirestore(String id, Map<String, dynamic> data) {
+    return Subject(
+      id: id,
+      name: data['name'] ?? '',
+      icon: data['icon'] ?? '📚',
+      order: data['order'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'name': name,
+      'icon': icon,
+      'order': order,
+    };
+  }
 }

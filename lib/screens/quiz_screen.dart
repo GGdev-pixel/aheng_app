@@ -1,31 +1,42 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/question.dart';
+import '../services/content_service.dart';
 import '../services/progress_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final Subject subject;
+  final Topic topic;
 
-  const QuizScreen({super.key, required this.subject});
+  const QuizScreen({super.key, required this.subject, required this.topic});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  late List<Question> _quizQuestions;
+  List<Question>? _quizQuestions;
   int _currentIndex = 0;
   int _correctCount = 0;
   int? _selectedOption;
   bool _answered = false;
+  List<int?> _userAnswers = [];
 
   @override
   void initState() {
     super.initState();
-    final allQuestions = List<Question>.from(widget.subject.questions);
+    _loadQuestions();
+  }
+
+  Future<void> _loadQuestions() async {
+    final allQuestions =
+    await ContentService.getQuestions(widget.subject.id, widget.topic.id).first;
     allQuestions.shuffle(Random());
     final count = allQuestions.length < 10 ? allQuestions.length : 10;
-    _quizQuestions = allQuestions.take(count).toList();
+    setState(() {
+      _quizQuestions = allQuestions.take(count).toList();
+      _userAnswers = List<int?>.filled(_quizQuestions!.length, null);
+    });
   }
 
   void _selectOption(int index) {
@@ -33,14 +44,15 @@ class _QuizScreenState extends State<QuizScreen> {
     setState(() {
       _selectedOption = index;
       _answered = true;
-      if (index == _quizQuestions[_currentIndex].correctIndex) {
+      _userAnswers[_currentIndex] = index;
+      if (index == _quizQuestions![_currentIndex].correctIndex) {
         _correctCount++;
       }
     });
   }
 
   void _nextQuestion() {
-    if (_currentIndex < _quizQuestions.length - 1) {
+    if (_currentIndex < _quizQuestions!.length - 1) {
       setState(() {
         _currentIndex++;
         _selectedOption = null;
@@ -54,8 +66,27 @@ class _QuizScreenState extends State<QuizScreen> {
   void _showResult() {
     ProgressService.saveQuizResult(
       subjectId: widget.subject.id,
-      answered: _quizQuestions.length,
+      topicId: widget.topic.id,
+      answered: _quizQuestions!.length,
       correct: _correctCount,
+    );
+
+    final questionsData = List.generate(_quizQuestions!.length, (i) {
+      final q = _quizQuestions![i];
+      return {
+        'text': q.text,
+        'options': q.options,
+        'correctIndex': q.correctIndex,
+        'selectedIndex': _userAnswers[i],
+      };
+    });
+
+    ProgressService.saveQuizAttempt(
+      subjectId: widget.subject.id,
+      subjectName: widget.subject.name,
+      topicId: widget.topic.id,
+      topicName: widget.topic.name,
+      questionsData: questionsData,
     );
 
     showDialog(
@@ -64,7 +95,7 @@ class _QuizScreenState extends State<QuizScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Nəticə'),
         content: Text(
-          'Siz ${_quizQuestions.length} sualdan $_correctCount-nə düzgün cavab verdiniz.',
+          'Siz ${_quizQuestions!.length} sualdan $_correctCount-nə düzgün cavab verdiniz.',
           style: const TextStyle(fontSize: 16),
         ),
         actions: [
@@ -82,30 +113,35 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_quizQuestions.isEmpty) {
+    if (_quizQuestions == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(widget.subject.name)),
+        appBar: AppBar(title: Text(widget.topic.name)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_quizQuestions!.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.topic.name)),
         body: const Center(child: Text('Bu mövzuda sual yoxdur')),
       );
     }
 
-    final question = _quizQuestions[_currentIndex];
+    final question = _quizQuestions![_currentIndex];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.subject.name),
-      ),
+      appBar: AppBar(title: Text(widget.topic.name)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             LinearProgressIndicator(
-              value: (_currentIndex + 1) / _quizQuestions.length,
+              value: (_currentIndex + 1) / _quizQuestions!.length,
             ),
             const SizedBox(height: 8),
             Text(
-              'Sual ${_currentIndex + 1} / ${_quizQuestions.length}',
+              'Sual ${_currentIndex + 1} / ${_quizQuestions!.length}',
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),
@@ -153,7 +189,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 child: ElevatedButton(
                   onPressed: _nextQuestion,
                   child: Text(
-                    _currentIndex < _quizQuestions.length - 1
+                    _currentIndex < _quizQuestions!.length - 1
                         ? 'Növbəti sual'
                         : 'Nəticəyə bax',
                   ),

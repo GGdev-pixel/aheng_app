@@ -8,6 +8,7 @@ import 'screens/auth_screen.dart';
 import 'screens/profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/teacher_screen.dart';
+import 'screens/results_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,7 +93,8 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _pages = const [
     SubjectsScreen(),
     StatisticsScreen(),
-    const ProfileScreen(),
+    ResultsScreen(),
+    ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -112,6 +114,7 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.quiz),
@@ -120,6 +123,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
             label: 'Statistika',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'Nəticələr',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
