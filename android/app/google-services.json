@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "412520792666",
+    "project_id": "aheng-fe694",
+    "storage_bucket": "aheng-fe694.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:412520792666:android:91247c4b39e1c6d0f58e63",
+        "android_client_info": {
+          "package_name": "com.ahengtm.aheng_app1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPdxDXKBz2u_0kItHAyB6VEBjOMfukepc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
