@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
+import 'statistics_screen.dart';
+import 'results_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -50,6 +52,40 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 24),
+          _ProfileMenuCard(
+            icon: Icons.bar_chart_rounded,
+            title: 'Statistika',
+            subtitle: 'Fənlər üzrə nəticələriniz',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Scaffold(
+                    appBar: AppBar(title: const Text('Statistika')),
+                    body: const StatisticsScreen(),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _ProfileMenuCard(
+            icon: Icons.history_rounded,
+            title: 'Nəticələr',
+            subtitle: 'Keçmiş testləriniz',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Scaffold(
+                    appBar: AppBar(title: const Text('Nəticələr')),
+                    body: const ResultsScreen(),
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 24),
           _TeacherCodeCard(),
@@ -193,6 +229,63 @@ class _TeacherCodeCardState extends State<_TeacherCodeCard> {
           ),
         );
       },
+    );
+  }
+}
+class _ProfileMenuCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ProfileMenuCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppColors.primaryBlue, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 15)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+          ],
+        ),
+      ),
     );
   }
 }

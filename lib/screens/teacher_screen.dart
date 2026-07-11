@@ -170,6 +170,14 @@ class _StudentsListView extends StatelessWidget {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(studentData['email'] ?? ''),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.person_remove_outlined, color: Colors.red, size: 20),
+                            onPressed: () => _removeStudent(
+                              context,
+                              studentDoc.id,
+                              studentData['name'] ?? studentData['email'] ?? '',
+                            ),
+                          ),
                           children: [
                             StreamBuilder<QuerySnapshot>(
                               stream: FirebaseFirestore.instance
@@ -242,5 +250,31 @@ class _StudentsListView extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+Future<void> _removeStudent(BuildContext context, String studentId, String studentName) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Tələbəni silmək'),
+      content: Text('"$studentName" siyahıdan silinsin? Onun nəticələri qorunacaq.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Ləğv et'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Sil', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(studentId)
+        .update({'teacherId': FieldValue.delete()});
   }
 }
