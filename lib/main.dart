@@ -9,6 +9,7 @@ import 'screens/profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/teacher_screen.dart';
 import 'screens/results_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,10 +27,7 @@ class AhengApp extends StatelessWidget {
     return MaterialApp(
       title: 'Ahəng',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.teal,
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
       home: const AuthGate(),
     );
   }
@@ -107,7 +105,21 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ahəng'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 24,
+              decoration: BoxDecoration(
+                color: AppColors.accentRed,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('Ahəng'),
+          ],
+        ),
         centerTitle: true,
       ),
       body: _pages[_selectedIndex],
@@ -117,7 +129,7 @@ class _MainScreenState extends State<MainScreen> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.quiz),
+            icon: Icon(Icons.school_outlined),
             label: 'Testlər',
           ),
           BottomNavigationBarItem(

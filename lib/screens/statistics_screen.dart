@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../services/content_service.dart';
 import '../services/progress_service.dart';
+import '../theme/app_theme.dart';
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
@@ -71,15 +72,17 @@ class StatisticsScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '${(percent * 100).toStringAsFixed(0)}%',
+                              totalAnswered > 0 ? '${(percent * 100).toStringAsFixed(0)}%' : '—',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: percent >= 0.7
-                                    ? Colors.green
+                                color: totalAnswered == 0
+                                    ? Colors.grey.shade400
+                                    : percent >= 0.7
+                                    ? AppColors.success
                                     : percent >= 0.4
-                                    ? Colors.orange
-                                    : Colors.red,
+                                    ? AppColors.warning
+                                    : AppColors.accentRed,
                               ),
                             ),
                           ],

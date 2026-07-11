@@ -6,6 +6,7 @@ import '../services/content_service.dart';
 import 'topics_screen.dart';
 import 'daily_quiz_screen.dart';
 import 'daily_settings_screen.dart';
+import '../theme/app_theme.dart';
 
 class SubjectsScreen extends StatelessWidget {
   const SubjectsScreen({super.key});
@@ -37,8 +38,7 @@ class SubjectsScreen extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
-                    leading:
-                    Text(subject.icon, style: const TextStyle(fontSize: 32)),
+                    leading: _SubjectIcon(subjectName: subject.name),
                     title: Text(
                       subject.name,
                       style: const TextStyle(
@@ -80,7 +80,7 @@ class _DailyCard extends StatelessWidget {
             (data?['dailySettings']['subjectIds'] as List?)?.isNotEmpty == true;
 
         return Card(
-          color: Colors.teal.shade50,
+          color: AppColors.primaryBlue.withOpacity(0.06),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -91,8 +91,7 @@ class _DailyCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.local_fire_department,
-                            color: Colors.orange, size: 28),
+                        const Icon(Icons.local_fire_department, color: AppColors.accentRed, size: 28),
                         const SizedBox(width: 8),
                         Text(
                           '$streak gün ardıcıl',
@@ -139,6 +138,39 @@ class _DailyCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+class _SubjectIcon extends StatelessWidget {
+  final String subjectName;
+
+  const _SubjectIcon({required this.subjectName});
+
+  IconData get _icon {
+    switch (subjectName) {
+      case 'Qanunvericilik':
+        return Icons.gavel_rounded;
+      case 'Məntiq':
+        return Icons.psychology_alt_rounded;
+      case 'Azərbaycan dili':
+        return Icons.menu_book_rounded;
+      case 'İnformatika':
+        return Icons.computer_rounded;
+      default:
+        return Icons.school_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.primaryBlue.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(_icon, color: AppColors.primaryBlue, size: 24),
     );
   }
 }

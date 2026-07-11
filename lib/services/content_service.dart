@@ -170,4 +170,42 @@ class ContentService {
         .doc(questionId)
         .delete();
   }
+
+  static Future<List<Subject>> getSubjectsOnce() async {
+    final snapshot = await _db.collection('subjects').orderBy('order').get();
+    return snapshot.docs
+        .map((doc) => Subject.fromFirestore(doc.id, doc.data()))
+        .toList();
+  }
+
+  static Future<String> findOrCreateTopic({
+    required String subjectId,
+    required String topicName,
+  }) async {
+    final existing = await _db
+        .collection('subjects')
+        .doc(subjectId)
+        .collection('topics')
+        .where('name', isEqualTo: topicName)
+        .limit(1)
+        .get();
+
+    if (existing.docs.isNotEmpty) {
+      return existing.docs.first.id;
+    }
+
+    final countSnapshot = await _db
+        .collection('subjects')
+        .doc(subjectId)
+        .collection('topics')
+        .get();
+
+    final newDoc = await _db
+        .collection('subjects')
+        .doc(subjectId)
+        .collection('topics')
+        .add({'name': topicName, 'order': countSnapshot.docs.length});
+
+    return newDoc.id;
+  }
 }

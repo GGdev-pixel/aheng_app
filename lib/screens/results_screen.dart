@@ -15,7 +15,9 @@ class ResultsScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final results = snapshot.data?.docs ?? [];
+        final results = (snapshot.data?.docs ?? [])
+            .where((doc) => (doc.data() as Map<String, dynamic>)['subjectId'] != 'daily')
+            .toList();
 
         if (results.isEmpty) {
           return const Center(child: Text('Hələ test edilməyib'));

@@ -6,6 +6,7 @@ import '../models/question.dart';
 import '../services/content_service.dart';
 import '../services/progress_service.dart';
 import 'daily_settings_screen.dart';
+import '../theme/app_theme.dart';
 
 class DailyQuizScreen extends StatefulWidget {
   const DailyQuizScreen({super.key});
@@ -367,91 +368,142 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
       appBar: AppBar(
         title: Text(_isRetryMode ? 'Səhvlərin düzəlişi' : 'Gündəlik suallar'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LinearProgressIndicator(
-              value: (_currentIndex + 1) / _quizQuestions.length,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Sual ${_currentIndex + 1} / ${_quizQuestions.length}',
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            if (question.imageUrl != null) ...[
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  question.imageUrl!,
-                  width: double.infinity,
-                  height: 180,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return Container(
-                      height: 180,
-                      alignment: Alignment.center,
-                      child: const CircularProgressIndicator(),
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: (_currentIndex + 1) / _quizQuestions.length,
+                  minHeight: 6,
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Sual ${_currentIndex + 1} / ${_quizQuestions.length}',
+                  style: const TextStyle(
+                    color: AppColors.primaryBlue,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (question.imageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    question.imageUrl!,
+                    width: double.infinity,
+                    height: 180,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        height: 180,
+                        alignment: Alignment.center,
+                        child: const CircularProgressIndicator(),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              Text(
+                question.text,
+                style: const TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  height: 1.3,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView(
+                  children: List.generate(question.options.length, (index) {
+                    final isSelected = _selectedOption == index;
+                    final isCorrect = index == question.correctIndex;
+
+                    Color borderColor = Colors.grey.shade300;
+                    Color bgColor = Colors.white;
+                    Color textColor = AppColors.textPrimary;
+                    IconData? trailingIcon;
+
+                    if (_answered) {
+                      if (isCorrect) {
+                        borderColor = AppColors.success;
+                        bgColor = AppColors.success.withOpacity(0.08);
+                        textColor = AppColors.success;
+                        trailingIcon = Icons.check_circle;
+                      } else if (isSelected) {
+                        borderColor = AppColors.accentRed;
+                        bgColor = AppColors.accentRed.withOpacity(0.08);
+                        textColor = AppColors.accentRed;
+                        trailingIcon = Icons.cancel;
+                      }
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () => _selectOption(index),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            border: Border.all(color: borderColor, width: 1.5),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  question.options[index],
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ),
+                              if (trailingIcon != null)
+                                Icon(trailingIcon, color: textColor, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
-                  },
+                  }),
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-            Text(
-              question.text,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 24),
-            ...List.generate(question.options.length, (index) {
-              final isSelected = _selectedOption == index;
-              final isCorrect = index == question.correctIndex;
-
-              Color? color;
-              if (_answered) {
-                if (isCorrect) {
-                  color = Colors.green.shade100;
-                } else if (isSelected) {
-                  color = Colors.red.shade100;
-                }
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  onTap: () => _selectOption(index),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: color,
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+              if (_answered)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _nextQuestion,
                     child: Text(
-                      question.options[index],
-                      style: const TextStyle(fontSize: 16),
+                      _currentIndex < _quizQuestions.length - 1
+                          ? 'Növbəti sual'
+                          : 'Bitir',
                     ),
                   ),
                 ),
-              );
-            }),
-            const Spacer(),
-            if (_answered)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _nextQuestion,
-                  child: Text(
-                    _currentIndex < _quizQuestions.length - 1
-                        ? 'Növbəti sual'
-                        : 'Bitir',
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

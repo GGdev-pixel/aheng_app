@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../services/content_service.dart';
 import '../services/progress_service.dart';
+import '../theme/app_theme.dart';
 
 class QuizScreen extends StatefulWidget {
   final Subject subject;
@@ -130,24 +131,41 @@ class _QuizScreenState extends State<QuizScreen> {
     final question = _quizQuestions![_currentIndex];
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.topic.name)),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+        appBar: AppBar(title: Text(widget.topic.name)),
+        body: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LinearProgressIndicator(
-              value: (_currentIndex + 1) / _quizQuestions!.length,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: (_currentIndex + 1) / _quizQuestions!.length,
+                minHeight: 6,
+                backgroundColor: Colors.grey.shade200,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Sual ${_currentIndex + 1} / ${_quizQuestions!.length}',
-              style: const TextStyle(color: Colors.grey),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Sual ${_currentIndex + 1} / ${_quizQuestions!.length}',
+                style: const TextStyle(
+                  color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             if (question.imageUrl != null) ...[
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: Image.network(
                   question.imageUrl!,
                   width: double.infinity,
@@ -167,42 +185,76 @@ class _QuizScreenState extends State<QuizScreen> {
             ],
             Text(
               question.text,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+                color: AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 24),
-            ...List.generate(question.options.length, (index) {
-              final isSelected = _selectedOption == index;
-              final isCorrect = index == question.correctIndex;
+            Expanded(
+              child: ListView(
+                children: List.generate(question.options.length, (index) {
+                  final isSelected = _selectedOption == index;
+                  final isCorrect = index == question.correctIndex;
 
-              Color? color;
-              if (_answered) {
-                if (isCorrect) {
-                  color = Colors.green.shade100;
-                } else if (isSelected) {
-                  color = Colors.red.shade100;
-                }
-              }
+                  Color borderColor = Colors.grey.shade300;
+                  Color bgColor = Colors.white;
+                  Color textColor = AppColors.textPrimary;
+                  IconData? trailingIcon;
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  onTap: () => _selectOption(index),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: color,
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
+                  if (_answered) {
+                    if (isCorrect) {
+                      borderColor = AppColors.success;
+                      bgColor = AppColors.success.withOpacity(0.08);
+                      textColor = AppColors.success;
+                      trailingIcon = Icons.check_circle;
+                    } else if (isSelected) {
+                      borderColor = AppColors.accentRed;
+                      bgColor = AppColors.accentRed.withOpacity(0.08);
+                      textColor = AppColors.accentRed;
+                      trailingIcon = Icons.cancel;
+                    }
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => _selectOption(index),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          border: Border.all(color: borderColor, width: 1.5),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                question.options[index],
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: textColor,
+                                ),
+                              ),
+                            ),
+                            if (trailingIcon != null)
+                              Icon(trailingIcon,
+                                  color: textColor, size: 20),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Text(
-                      question.options[index],
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
-              );
-            }),
-            const Spacer(),
+                  );
+                }),
+              ),
+            ),
             if (_answered)
               SizedBox(
                 width: double.infinity,
@@ -211,13 +263,14 @@ class _QuizScreenState extends State<QuizScreen> {
                   child: Text(
                     _currentIndex < _quizQuestions!.length - 1
                         ? 'Növbəti sual'
-                        : 'Nəticəyə bax',
+                        : 'Bitir',
                   ),
                 ),
               ),
           ],
         ),
       ),
+        ),
     );
   }
 }

@@ -29,7 +29,10 @@ class ManageQuestionsScreen extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Yeni sual'),
-          content: SingleChildScrollView(
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 450,
+            child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -51,6 +54,14 @@ class ManageQuestionsScreen extends StatelessWidget {
                             height: 150,
                             width: double.infinity,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              print('IMAGE ERROR: $error');
+                              return Container(
+                                height: 150,
+                                color: Colors.grey.shade200,
+                                child: const Center(child: Text('Şəkil yüklənmədi')),
+                              );
+                            },
                           ),
                         ),
                         Positioned(
@@ -107,6 +118,7 @@ class ManageQuestionsScreen extends StatelessWidget {
                     ),
                   ),
               ],
+            ),
             ),
           ),
           actions: [
