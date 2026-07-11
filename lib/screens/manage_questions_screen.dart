@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../services/content_service.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class ManageQuestionsScreen extends StatelessWidget {
   final Subject subject;
@@ -19,6 +21,8 @@ class ManageQuestionsScreen extends StatelessWidget {
     final option3 = TextEditingController();
     final option4 = TextEditingController();
     int correctIndex = 0;
+    File? pickedImage;
+    bool isUploading = false;
 
     showDialog(
       context: context,
@@ -33,6 +37,49 @@ class ManageQuestionsScreen extends StatelessWidget {
                   controller: textController,
                   decoration: const InputDecoration(labelText: 'Sual mətni'),
                   maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+                if (pickedImage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            pickedImage!,
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.black54,
+                            ),
+                            onPressed: () {
+                              setDialogState(() => pickedImage = null);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final picker = ImagePicker();
+                    final picked =
+                    await picker.pickImage(source: ImageSource.gallery);
+                    if (picked != null) {
+                      setDialogState(() => pickedImage = File(picked.path));
+                    }
+                  },
+                  icon: const Icon(Icons.image),
+                  label: Text(pickedImage == null ? 'Şəkil əlavə et' : 'Şəkli dəyiş'),
                 ),
                 const SizedBox(height: 16),
                 for (int i = 0; i < 4; i++)
@@ -64,11 +111,13 @@ class ManageQuestionsScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: isUploading ? null : () => Navigator.pop(context),
               child: const Text('Ləğv et'),
             ),
             TextButton(
-              onPressed: () async {
+              onPressed: isUploading
+                  ? null
+                  : () async {
                 final options = [
                   option1.text.trim(),
                   option2.text.trim(),
@@ -79,16 +128,33 @@ class ManageQuestionsScreen extends StatelessWidget {
                     options.any((o) => o.isEmpty)) {
                   return;
                 }
+
+                setDialogState(() => isUploading = true);
+
+                String? imageUrl;
+                if (pickedImage != null) {
+                  imageUrl =
+                  await ContentService.uploadQuestionImage(pickedImage!);
+                }
+
                 await ContentService.addQuestion(
                   subjectId: subject.id,
                   topicId: topic.id,
                   text: textController.text.trim(),
                   options: options,
                   correctIndex: correctIndex,
+                  imageUrl: imageUrl,
                 );
+
                 if (context.mounted) Navigator.pop(context);
               },
-              child: const Text('Əlavə et'),
+              child: isUploading
+                  ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : const Text('Əlavə et'),
             ),
           ],
         ),
@@ -147,16 +213,25 @@ class ManageQuestionsScreen extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16),
+                        leading: question.imageUrl != null
+                            ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            question.imageUrl!,
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                            : null,
                         title: Text(question.text),
                         subtitle: Text(
                           'Düzgün: ${question.options[question.correctIndex]}',
                           style: const TextStyle(color: Colors.green),
                         ),
                         trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: Colors.red),
-                          onPressed: () =>
-                              _confirmDelete(context, question),
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () => _confirmDelete(context, question),
                         ),
                       ),
                     );

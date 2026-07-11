@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/question.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class ContentService {
   static final _db = FirebaseFirestore.instance;
@@ -14,6 +16,13 @@ class ContentService {
         .map((snapshot) => snapshot.docs
         .map((doc) => Subject.fromFirestore(doc.id, doc.data()))
         .toList());
+  }
+
+  static Future<String> uploadQuestionImage(File imageFile) async {
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final ref = FirebaseStorage.instance.ref().child('question_images/$fileName');
+    await ref.putFile(imageFile);
+    return await ref.getDownloadURL();
   }
 
   static Future<void> addSubject({
@@ -134,6 +143,7 @@ class ContentService {
     required String text,
     required List<String> options,
     required int correctIndex,
+    String? imageUrl,
   }) async {
     await _db
         .collection('subjects')
@@ -145,6 +155,7 @@ class ContentService {
       'text': text,
       'options': options,
       'correctIndex': correctIndex,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     });
   }
 

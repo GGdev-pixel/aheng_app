@@ -3,12 +3,14 @@ class Question {
   final String text;
   final List<String> options;
   final int correctIndex;
+  final String? imageUrl;
 
   const Question({
     required this.id,
     required this.text,
     required this.options,
     required this.correctIndex,
+    this.imageUrl,
   });
 
   factory Question.fromFirestore(String id, Map<String, dynamic> data) {
@@ -17,6 +19,7 @@ class Question {
       text: data['text'] ?? '',
       options: List<String>.from(data['options'] ?? []),
       correctIndex: data['correctIndex'] ?? 0,
+      imageUrl: data['imageUrl'],
     );
   }
 
@@ -25,6 +28,7 @@ class Question {
       'text': text,
       'options': options,
       'correctIndex': correctIndex,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     };
   }
 }

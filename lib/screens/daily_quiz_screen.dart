@@ -381,6 +381,26 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),
+            if (question.imageUrl != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  question.imageUrl!,
+                  width: double.infinity,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Container(
+                      height: 180,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             Text(
               question.text,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
