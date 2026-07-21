@@ -144,6 +144,8 @@ class ContentService {
     required List<String> options,
     required int correctIndex,
     String? imageUrl,
+    QuestionType type = QuestionType.multipleChoice,
+    String? scrambleWord,
   }) async {
     await _db
         .collection('subjects')
@@ -156,6 +158,25 @@ class ContentService {
       'options': options,
       'correctIndex': correctIndex,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      'type': type.name,
+      if (scrambleWord != null) 'scrambleWord': scrambleWord,
+    });
+  }
+
+  static Future<void> updateLesson({
+    required String subjectId,
+    required String topicId,
+    required String content,
+    String? imageUrl,
+  }) async {
+    await _db
+        .collection('subjects')
+        .doc(subjectId)
+        .collection('topics')
+        .doc(topicId)
+        .update({
+      'lessonContent': content,
+      if (imageUrl != null) 'lessonImageUrl': imageUrl,
     });
   }
 

@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/subjects_screen.dart';
-import 'screens/statistics_screen.dart';
+import 'screens/lessons_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -90,7 +90,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _pages = const [
     SubjectsScreen(),
-    StatisticsScreen(),
+    LessonsScreen(),
     ResultsScreen(),
     ProfileScreen(),
   ];
@@ -133,8 +133,8 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Testlər',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Statistika',
+            icon: Icon(Icons.menu_book_outlined),
+            label: 'Dərslər',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history),
