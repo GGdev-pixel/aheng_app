@@ -5,6 +5,7 @@ import '../models/question.dart';
 import '../services/content_service.dart';
 import 'manage_subjects_screen.dart';
 import 'dart:math';
+import 'student_detail_screen.dart';
 
 class TeacherScreen extends StatefulWidget {
   const TeacherScreen({super.key});
@@ -132,116 +133,53 @@ class _StudentsListView extends StatelessWidget {
           },
         ),
         Expanded(
-          child: StreamBuilder<List<Subject>>(
-            stream: ContentService.getSubjects(),
-            builder: (context, subjectsSnapshot) {
-              final subjects = subjectsSnapshot.data ?? [];
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .where('role', isEqualTo: 'student')
+                .where('teacherId', isEqualTo: userId)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-              return StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('users')
-                    .where('role', isEqualTo: 'student')
-                    .where('teacherId', isEqualTo: userId)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+              final students = snapshot.data?.docs ?? [];
 
-                  final students = snapshot.data?.docs ?? [];
+              if (students.isEmpty) {
+                return const Center(child: Text('Hələ tələbə yoxdur'));
+              }
 
-                  if (students.isEmpty) {
-                    return const Center(child: Text('Hələ tələbə yoxdur'));
-                  }
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: students.length,
+                itemBuilder: (context, index) {
+                  final studentDoc = students[index];
+                  final studentData = studentDoc.data() as Map<String, dynamic>;
+                  final studentName = studentData['name'] ?? studentData['email'] ?? '';
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: students.length,
-                    itemBuilder: (context, index) {
-                      final studentDoc = students[index];
-                      final studentData =
-                      studentDoc.data() as Map<String, dynamic>;
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ExpansionTile(
-                          title: Text(
-                            studentData['name'] ?? studentData['email'] ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(studentData['email'] ?? ''),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.person_remove_outlined, color: Colors.red, size: 20),
-                            onPressed: () => _removeStudent(
-                              context,
-                              studentDoc.id,
-                              studentData['name'] ?? studentData['email'] ?? '',
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      title: Text(studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(studentData['email'] ?? ''),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.person_remove_outlined, color: Colors.red, size: 20),
+                        onPressed: () => _removeStudent(context, studentDoc.id, studentName),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => StudentDetailScreen(
+                              studentId: studentDoc.id,
+                              studentName: studentName,
                             ),
                           ),
-                          children: [
-                            StreamBuilder<QuerySnapshot>(
-                              stream: FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(studentDoc.id)
-                                  .collection('progress')
-                                  .snapshots(),
-                              builder: (context, progressSnapshot) {
-                                if (!progressSnapshot.hasData) {
-                                  return const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: CircularProgressIndicator(),
-                                  );
-                                }
-
-                                final progressDocs = progressSnapshot.data!.docs;
-
-                                if (progressDocs.isEmpty) {
-                                  return const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Text('Hələ test edilməyib'),
-                                  );
-                                }
-
-                                return Column(
-                                  children: progressDocs.map((doc) {
-                                    final progData =
-                                    doc.data() as Map<String, dynamic>;
-                                    final answered = progData['answered'] ?? 0;
-                                    final correct = progData['correct'] ?? 0;
-                                    final percent = answered > 0
-                                        ? (correct / answered * 100)
-                                        : 0;
-                                    final subjectId = progData['subjectId'] ?? '';
-
-                                    final subject = subjects.firstWhere(
-                                          (s) => s.id == subjectId,
-                                      orElse: () => const Subject(
-                                          id: '', name: '?', icon: '📚', order: 0),
-                                    );
-
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 4,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text('${subject.icon} ${subject.name}'),
-                                          Text('${percent.toStringAsFixed(0)}%'),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   );
                 },
               );
@@ -252,6 +190,7 @@ class _StudentsListView extends StatelessWidget {
     );
   }
 }
+
 Future<void> _removeStudent(BuildContext context, String studentId, String studentName) async {
   final confirmed = await showDialog<bool>(
     context: context,

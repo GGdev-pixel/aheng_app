@@ -5,9 +5,12 @@ import '../models/question.dart';
 import '../services/content_service.dart';
 import '../services/progress_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/trend_chart.dart';
 
 class StatisticsScreen extends StatelessWidget {
-  const StatisticsScreen({super.key});
+  final String? userId;
+
+  const StatisticsScreen({super.key, this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +28,7 @@ class StatisticsScreen extends StatelessWidget {
         }
 
         return StreamBuilder(
-          stream: ProgressService.getProgressStream(),
+          stream: ProgressService.getProgressStream(userId: userId),
           builder: (context, progressSnapshot) {
             final progressMap = <String, Map<String, int>>{};
             if (progressSnapshot.hasData) {
@@ -48,7 +51,13 @@ class StatisticsScreen extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _SummaryCard(totalAnswered: totalAnswered, totalCorrect: totalCorrect),
+                _SummaryCard(
+                  totalAnswered: totalAnswered,
+                  totalCorrect: totalCorrect,
+                  userId: userId,
+                ),
+                const SizedBox(height: 20),
+                _TrendSection(userId: userId),
                 const SizedBox(height: 20),
                 ...subjects.map((subject) {
                   return _SubjectExpansionCard(
@@ -68,16 +77,21 @@ class StatisticsScreen extends StatelessWidget {
 class _SummaryCard extends StatelessWidget {
   final int totalAnswered;
   final int totalCorrect;
+  final String? userId;
 
-  const _SummaryCard({required this.totalAnswered, required this.totalCorrect});
+  const _SummaryCard({
+    required this.totalAnswered,
+    required this.totalCorrect,
+    this.userId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final uid = userId ?? FirebaseAuth.instance.currentUser?.uid;
     final percent = totalAnswered > 0 ? (totalCorrect / totalAnswered * 100) : 0.0;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(userId).snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
       builder: (context, snapshot) {
         final streak = (snapshot.data?.data() as Map<String, dynamic>?)?['dailyStreak'] ?? 0;
 
@@ -265,6 +279,55 @@ class _SubjectExpansionCard extends StatelessWidget {
           const SizedBox(height: 12),
         ],
       ),
+    );
+  }
+}
+
+class _TrendSection extends StatelessWidget {
+  final String? userId;
+
+  const _TrendSection({this.userId});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: ProgressService.getResultsStream(userId: userId),
+      builder: (context, snapshot) {
+        final docs = (snapshot.data?.docs ?? [])
+            .where((doc) => (doc.data() as Map<String, dynamic>)['subjectId'] != 'daily')
+            .toList();
+
+        if (docs.isEmpty) return const SizedBox.shrink();
+
+        final chronological = docs.reversed.toList();
+        final recent = chronological.length > 15
+            ? chronological.sublist(chronological.length - 15)
+            : chronological;
+
+        final percentages = recent.map<double>((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final int answered = data['answered'] ?? 1;
+          final int correct = data['correct'] ?? 0;
+          return answered > 0 ? (correct / answered * 100) : 0.0;
+        }).toList();
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Son testlərin dinamikası',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                const SizedBox(height: 12),
+                TrendChart(percentages: percentages),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -4,12 +4,14 @@ import '../services/progress_service.dart';
 import 'result_detail_screen.dart';
 
 class ResultsScreen extends StatelessWidget {
-  const ResultsScreen({super.key});
+  final String? userId;
+
+  const ResultsScreen({super.key, this.userId});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: ProgressService.getResultsStream(),
+      stream: ProgressService.getResultsStream(userId: userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

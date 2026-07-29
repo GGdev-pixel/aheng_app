@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/progress_service.dart';
 
 class ProgressService {
   static final _db = FirebaseFirestore.instance;
@@ -44,13 +43,13 @@ class ProgressService {
     }
   }
 
-  static Stream<QuerySnapshot> getProgressStream() {
-    final userId = _userId;
-    if (userId == null) return const Stream.empty();
+  static Stream<QuerySnapshot> getProgressStream({String? userId}) {
+    final uid = userId ?? _userId;
+    if (uid == null) return const Stream.empty();
 
     return _db
         .collection('users')
-        .doc(userId)
+        .doc(uid)
         .collection('progress')
         .snapshots();
   }
@@ -81,13 +80,13 @@ class ProgressService {
     });
   }
 
-  static Stream<QuerySnapshot> getResultsStream() {
-    final userId = _userId;
-    if (userId == null) return const Stream.empty();
+  static Stream<QuerySnapshot> getResultsStream({String? userId}) {
+    final uid = userId ?? _userId;
+    if (uid == null) return const Stream.empty();
 
     return _db
         .collection('users')
-        .doc(userId)
+        .doc(uid)
         .collection('results')
         .orderBy('timestamp', descending: true)
         .snapshots();
