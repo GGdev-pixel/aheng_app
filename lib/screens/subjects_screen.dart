@@ -7,6 +7,8 @@ import 'topics_screen.dart';
 import 'daily_quiz_screen.dart';
 import 'daily_settings_screen.dart';
 import '../theme/app_theme.dart';
+import 'statistics_screen.dart';
+import '../services/progress_service.dart';
 
 class SubjectsScreen extends StatelessWidget {
   const SubjectsScreen({super.key});
@@ -26,6 +28,9 @@ class SubjectsScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           children: [
             _DailyCard(),
+            const SizedBox(height: 16),
+            _WeakTopicsCard(subjects: subjects),
+
             const SizedBox(height: 24),
             if (subjects.isEmpty)
               const Padding(
@@ -171,6 +176,97 @@ class _SubjectIcon extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(_icon, color: AppColors.primaryBlue, size: 24),
+    );
+  }
+}
+class _WeakTopicsCard extends StatelessWidget {
+  final List<Subject> subjects;
+
+  const _WeakTopicsCard({required this.subjects});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: ProgressService.getProgressStream(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        final progressMap = <String, Map<String, int>>{};
+        for (var doc in (snapshot.data as dynamic).docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          progressMap[doc.id] = {
+            'answered': data['answered'] ?? 0,
+            'correct': data['correct'] ?? 0,
+          };
+        }
+
+        final subjectStats = <MapEntry<Subject, double>>[];
+        for (var subject in subjects) {
+          int answered = 0;
+          int correct = 0;
+          progressMap.forEach((key, value) {
+            if (key.startsWith('${subject.id}_')) {
+              answered += value['answered']!;
+              correct += value['correct']!;
+            }
+          });
+          if (answered > 0) {
+            subjectStats.add(MapEntry(subject, correct / answered));
+          }
+        }
+
+        if (subjectStats.isEmpty) return const SizedBox.shrink();
+
+        subjectStats.sort((a, b) => a.value.compareTo(b.value));
+        final weakest = subjectStats.first;
+
+        if (weakest.value >= 0.7) return const SizedBox.shrink();
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Scaffold(
+                  appBar: AppBar(title: const Text('Statistika')),
+                  body: const StatisticsScreen(),
+                ),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.accentRed.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.accentRed.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.trending_down_rounded, color: AppColors.accentRed),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Zəif tərəf: ${weakest.key.name}',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                      Text(
+                        '${(weakest.value * 100).toStringAsFixed(0)}% doğru — bu mövzunu təkrarlayın',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.accentRed),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

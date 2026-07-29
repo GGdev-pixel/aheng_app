@@ -8,7 +8,7 @@ import 'screens/auth_screen.dart';
 import 'screens/profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/teacher_screen.dart';
-import 'screens/results_screen.dart';
+import 'screens/statistics_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -91,7 +91,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _pages = const [
     SubjectsScreen(),
     LessonsScreen(),
-    ResultsScreen(),
+    StatisticsScreen(),
     ProfileScreen(),
   ];
 
@@ -137,8 +137,8 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Dərslər',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'Nəticələr',
+            icon: Icon(Icons.bar_chart_rounded),
+            label: 'Statistika',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
