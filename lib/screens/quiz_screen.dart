@@ -6,6 +6,7 @@ import '../services/progress_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/word_scramble_game.dart';
 import '../widgets/fill_blank_game.dart';
+import '../widgets/multi_select_game.dart';
 
 class QuizScreen extends StatefulWidget {
   final Subject subject;
@@ -114,6 +115,108 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
+  Widget _buildOptions(Question question) {
+    if (question.type == QuestionType.wordScramble) {
+      return WordScrambleGame(
+        key: ValueKey(question.id),
+        word: question.scrambleWord ?? '',
+        onAnswered: (isCorrect) {
+          setState(() {
+            _answered = true;
+            _userAnswers[_currentIndex] = isCorrect ? 1 : 0;
+            if (isCorrect) _correctCount++;
+          });
+        },
+      );
+    } else if (question.type == QuestionType.fillBlank) {
+      return FillBlankGame(
+        key: ValueKey(question.id),
+        sentence: question.blankSentence ?? '',
+        options: question.options,
+        correctIndex: question.correctIndex,
+        onAnswered: (isCorrect) {
+          setState(() {
+            _answered = true;
+            _userAnswers[_currentIndex] = isCorrect ? 1 : 0;
+            if (isCorrect) _correctCount++;
+          });
+        },
+      );
+    } else if (question.type == QuestionType.multiSelect) {
+      return MultiSelectGame(
+        key: ValueKey(question.id),
+        statements: question.statements ?? [],
+        correctIndices: question.correctStatementIndices ?? [],
+        onAnswered: (isCorrect) {
+          setState(() {
+            _answered = true;
+            _userAnswers[_currentIndex] = isCorrect ? 1 : 0;
+            if (isCorrect) _correctCount++;
+          });
+        },
+      );
+    }
+
+    return Column(
+      children: List.generate(question.options.length, (index) {
+        final isSelected = _selectedOption == index;
+        final isCorrect = index == question.correctIndex;
+
+        Color borderColor = Colors.grey.shade300;
+        Color bgColor = Colors.white;
+        Color textColor = AppColors.textPrimary;
+        IconData? trailingIcon;
+
+        if (_answered) {
+          if (isCorrect) {
+            borderColor = AppColors.success;
+            bgColor = AppColors.success.withOpacity(0.08);
+            textColor = AppColors.success;
+            trailingIcon = Icons.check_circle;
+          } else if (isSelected) {
+            borderColor = AppColors.accentRed;
+            bgColor = AppColors.accentRed.withOpacity(0.08);
+            textColor = AppColors.accentRed;
+            trailingIcon = Icons.cancel;
+          }
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => _selectOption(index),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: bgColor,
+                border: Border.all(color: borderColor, width: 1.5),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      question.options[index],
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                  if (trailingIcon != null)
+                    Icon(trailingIcon, color: textColor, size: 20),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_quizQuestions == null) {
@@ -135,164 +238,85 @@ class _QuizScreenState extends State<QuizScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.topic.name)),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: (_currentIndex + 1) / _quizQuestions!.length,
-                  minHeight: 6,
-                  backgroundColor: Colors.grey.shade200,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Sual ${_currentIndex + 1} / ${_quizQuestions!.length}',
-                  style: const TextStyle(
-                    color: AppColors.primaryBlue,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              if (question.imageUrl != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    question.imageUrl!,
-                    width: double.infinity,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
-                        height: 180,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              Text(
-                question.text,
-                style: const TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (question.type == QuestionType.wordScramble)
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: WordScrambleGame(
-                      key: ValueKey(question.id),
-                      word: question.scrambleWord ?? '',
-                      onAnswered: (isCorrect) {
-                        setState(() {
-                          _answered = true;
-                          _userAnswers[_currentIndex] = isCorrect ? 1 : 0;
-                          if (isCorrect) _correctCount++;
-                        });
-                      },
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: (_currentIndex + 1) / _quizQuestions!.length,
+                      minHeight: 6,
+                      backgroundColor: Colors.grey.shade200,
                     ),
                   ),
-                )
-              else if (question.type == QuestionType.fillBlank)
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: FillBlankGame(
-                      key: ValueKey(question.id),
-                      sentence: question.blankSentence ?? '',
-                      options: question.options,
-                      correctIndex: question.correctIndex,
-                      onAnswered: (isCorrect) {
-                        setState(() {
-                          _answered = true;
-                          _userAnswers[_currentIndex] = isCorrect ? 1 : 0;
-                          if (isCorrect) _correctCount++;
-                        });
-                      },
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Sual ${_currentIndex + 1} / ${_quizQuestions!.length}',
+                      style: const TextStyle(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                )
-              else
-                Expanded(
-                  child: ListView(
-                    children: List.generate(question.options.length, (index) {
-                      final isSelected = _selectedOption == index;
-                      final isCorrect = index == question.correctIndex;
-
-                      Color borderColor = Colors.grey.shade300;
-                      Color bgColor = Colors.white;
-                      Color textColor = AppColors.textPrimary;
-                      IconData? trailingIcon;
-
-                      if (_answered) {
-                        if (isCorrect) {
-                          borderColor = AppColors.success;
-                          bgColor = AppColors.success.withOpacity(0.08);
-                          textColor = AppColors.success;
-                          trailingIcon = Icons.check_circle;
-                        } else if (isSelected) {
-                          borderColor = AppColors.accentRed;
-                          bgColor = AppColors.accentRed.withOpacity(0.08);
-                          textColor = AppColors.accentRed;
-                          trailingIcon = Icons.cancel;
-                        }
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () => _selectOption(index),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 16),
-                            decoration: BoxDecoration(
-                              color: bgColor,
-                              border: Border.all(color: borderColor, width: 1.5),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    question.options[index],
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                ),
-                                if (trailingIcon != null)
-                                  Icon(trailingIcon, color: textColor, size: 20),
-                              ],
-                            ),
-                          ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (question.imageUrl != null) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          question.imageUrl!,
+                          width: double.infinity,
+                          height: 180,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              height: 180,
+                              alignment: Alignment.center,
+                              child: const CircularProgressIndicator(),
+                            );
+                          },
                         ),
-                      );
-                    }),
-                  ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Text(
+                      question.text,
+                      style: const TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w700,
+                        height: 1.3,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildOptions(question),
+                  ],
                 ),
-              if (_answered)
-                SizedBox(
+              ),
+            ),
+            if (_answered)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _nextQuestion,
@@ -303,8 +327,8 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

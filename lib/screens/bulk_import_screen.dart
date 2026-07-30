@@ -59,6 +59,9 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
 
     for (var row in rows) {
       try {
+        // Sütun sırası:
+        // 0 Fənn | 1 Mövzu | 2 Sual | 3-6 Cavab1-4 | 7 DuzgunCavab | 8 Sekil
+        // 9 Tip | 10 Ifadeler | 11 DuzgunIndeksler
         final subjectName = _cellText(row, 0);
         final topicName = _cellText(row, 1);
         final questionText = _cellText(row, 2);
@@ -68,8 +71,17 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
         final cavab4 = _cellText(row, 6);
         final duzgunRaw = _cellText(row, 7);
         final imageFileName = _cellText(row, 8);
+        final tip = _cellText(row, 9).toLowerCase().trim();
+        if (row.length > 2 && _cellText(row, 2).contains('Əldə edilməsi qaydasına')) {
+          print('DEBUG row length: ${row.length}');
+          print('DEBUG col9 (tip): "${_cellText(row, 9)}"');
+          print('DEBUG col10 (ifadeler): "${_cellText(row, 10)}"');
+          print('DEBUG col11 (indices): "${_cellText(row, 11)}"');
+        }
+        final ifadelerRaw = _cellText(row, 10);
+        final duzgunIndekslerRaw = _cellText(row, 11);
 
-        if (subjectName.isEmpty || topicName.isEmpty || questionText.isEmpty) {
+        if (subjectName.isEmpty || topicName.isEmpty) {
           _errors.add('Boş sətir keçildi');
           continue;
         }
@@ -79,8 +91,6 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
           _errors.add('Fənn tapılmadı: "$subjectName"');
           continue;
         }
-
-        final correctIndex = (int.tryParse(duzgunRaw) ?? 1) - 1;
 
         final topicId = await ContentService.findOrCreateTopic(
           subjectId: subject.first.id,
@@ -97,14 +107,54 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
           }
         }
 
-        await ContentService.addQuestion(
-          subjectId: subject.first.id,
-          topicId: topicId,
-          text: questionText,
-          options: [cavab1, cavab2, cavab3, cavab4],
-          correctIndex: correctIndex,
-          imageUrl: imageUrl,
-        );
+        if (tip == 'coxsecim') {
+          if (questionText.isEmpty || ifadelerRaw.isEmpty || duzgunIndekslerRaw.isEmpty) {
+            _errors.add('Çoxseçimli sual natamamdır: "$questionText"');
+            continue;
+          }
+          final statements = ifadelerRaw
+              .split(';')
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
+          final correctIndices = duzgunIndekslerRaw
+              .split(',')
+              .map((s) => int.tryParse(s.trim()))
+              .where((n) => n != null)
+              .map((n) => n! - 1)
+              .toList();
+
+          if (statements.isEmpty || correctIndices.isEmpty) {
+            _errors.add('Çoxseçimli sual natamamdır: "$questionText"');
+            continue;
+          }
+
+          await ContentService.addQuestion(
+            subjectId: subject.first.id,
+            topicId: topicId,
+            text: questionText,
+            options: const [],
+            correctIndex: 0,
+            imageUrl: imageUrl,
+            type: QuestionType.multiSelect,
+            statements: statements,
+            correctStatementIndices: correctIndices,
+          );
+        } else {
+          if (questionText.isEmpty) {
+            _errors.add('Boş sətir keçildi');
+            continue;
+          }
+          final correctIndex = (int.tryParse(duzgunRaw) ?? 1) - 1;
+          await ContentService.addQuestion(
+            subjectId: subject.first.id,
+            topicId: topicId,
+            text: questionText,
+            options: [cavab1, cavab2, cavab3, cavab4],
+            correctIndex: correctIndex,
+            imageUrl: imageUrl,
+          );
+        }
       } catch (e) {
         _errors.add('Xəta: $e');
       }

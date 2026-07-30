@@ -1,4 +1,4 @@
-enum QuestionType { multipleChoice, wordScramble, matching, fillBlank }
+enum QuestionType { multipleChoice, wordScramble, matching, fillBlank, multiSelect }
 
 class Question {
   final String id;
@@ -11,6 +11,8 @@ class Question {
   final List<Map<String, String>>? matchingPairs;
   final String? blankSentence;
   final String? blankAnswer;
+  final List<String>? statements;
+  final List<int>? correctStatementIndices;
 
   const Question({
     required this.id,
@@ -23,6 +25,8 @@ class Question {
     this.matchingPairs,
     this.blankSentence,
     this.blankAnswer,
+    this.statements,
+    this.correctStatementIndices,
   });
 
   factory Question.fromFirestore(String id, Map<String, dynamic> data) {
@@ -36,6 +40,12 @@ class Question {
             (t) => t.name == (data['type'] ?? 'multipleChoice'),
         orElse: () => QuestionType.multipleChoice,
       ),
+      statements: data['statements'] != null
+          ? List<String>.from(data['statements'])
+          : null,
+      correctStatementIndices: data['correctStatementIndices'] != null
+          ? List<int>.from(data['correctStatementIndices'])
+          : null,
       scrambleWord: data['scrambleWord'],
       matchingPairs: data['matchingPairs'] != null
           ? List<Map<String, String>>.from(
@@ -57,6 +67,8 @@ class Question {
       if (matchingPairs != null) 'matchingPairs': matchingPairs,
       if (blankSentence != null) 'blankSentence': blankSentence,
       if (blankAnswer != null) 'blankAnswer': blankAnswer,
+      if (statements != null) 'statements': statements,
+      if (correctStatementIndices != null) 'correctStatementIndices': correctStatementIndices,
     };
   }
 }

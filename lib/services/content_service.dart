@@ -146,6 +146,9 @@ class ContentService {
     String? imageUrl,
     QuestionType type = QuestionType.multipleChoice,
     String? scrambleWord,
+    String? blankSentence,
+    List<String>? statements,
+    List<int>? correctStatementIndices,
   }) async {
     await _db
         .collection('subjects')
@@ -160,6 +163,9 @@ class ContentService {
       if (imageUrl != null) 'imageUrl': imageUrl,
       'type': type.name,
       if (scrambleWord != null) 'scrambleWord': scrambleWord,
+      if (blankSentence != null) 'blankSentence': blankSentence,
+      if (statements != null) 'statements': statements,
+      if (correctStatementIndices != null) 'correctStatementIndices': correctStatementIndices,
     });
   }
 

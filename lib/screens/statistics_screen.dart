@@ -243,7 +243,15 @@ class _SubjectExpansionCard extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(topic.name, style: const TextStyle(fontSize: 13)),
+                            Expanded(
+                              child: Text(
+                                topic.name,
+                                style: const TextStyle(fontSize: 13),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Text(
                               answered > 0 ? '${(topicPercent * 100).toStringAsFixed(0)}%' : '—',
                               style: TextStyle(
