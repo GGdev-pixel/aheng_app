@@ -17,6 +17,7 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLogin = true;
   bool _isLoading = false;
   String? _errorText;
+  String _selectedRole = 'student';
 
   Future<void> _submit() async {
     setState(() {
@@ -43,7 +44,8 @@ class _AuthScreenState extends State<AuthScreen> {
             .set({
           'email': _emailController.text.trim(),
           'name': _nameController.text.trim(),
-          'role': 'student',
+          'role': _selectedRole,
+          'isContentAdmin': false,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -108,6 +110,38 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Kim kimi qeydiyyatdan keçirsiniz?',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _RoleChip(
+                            label: 'Tələbə',
+                            selected: _selectedRole == 'student',
+                            onTap: () {
+                              setState(() => _selectedRole = 'student');
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _RoleChip(
+                            label: 'Müəllim',
+                            selected: _selectedRole == 'teacher',
+                            onTap: () {
+                              setState(() => _selectedRole = 'teacher');
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                   ],
                   TextField(
                     controller: _emailController,
@@ -168,6 +202,44 @@ class _AuthScreenState extends State<AuthScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoleChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _RoleChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? Colors.teal : Colors.transparent,
+          border: Border.all(
+            color: selected ? Colors.teal : Colors.grey.shade400,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

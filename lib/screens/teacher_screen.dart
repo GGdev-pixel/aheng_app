@@ -16,46 +16,29 @@ class TeacherScreen extends StatefulWidget {
 
 class _TeacherScreenState extends State<TeacherScreen> {
   int _selectedIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final pages = [
-      const _StudentsListView(),
-      const ManageSubjectsScreen(),
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_selectedIndex == 0 ? 'Tələbələr' : 'Fənlərin idarəsi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => FirebaseAuth.instance.signOut(),
-          ),
-        ],
-      ),
-      body: pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Tələbələr',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.edit_note),
-            label: 'Fənlər',
-          ),
-        ],
-      ),
-    );
-  }
+  bool _isContentAdmin = false;
+  bool _loadingAdminStatus = true;
 
   @override
   void initState() {
     super.initState();
     _ensureInviteCode();
+    _checkContentAdmin();
+  }
+
+  Future<void> _checkContentAdmin() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    setState(() {
+      _isContentAdmin = doc.data()?['isContentAdmin'] == true;
+      _loadingAdminStatus = false;
+    });
   }
 
   String _generateCode() {
@@ -78,6 +61,54 @@ class _TeacherScreenState extends State<TeacherScreen> {
         'inviteCode': _generateCode(),
       });
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loadingAdminStatus) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final pages = [
+      const _StudentsListView(),
+      if (_isContentAdmin) const ManageSubjectsScreen(),
+    ];
+
+    final titles = [
+      'Tələbələr',
+      if (_isContentAdmin) 'Fənlərin idarəsi',
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(titles[_selectedIndex]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => FirebaseAuth.instance.signOut(),
+          ),
+        ],
+      ),
+      body: pages[_selectedIndex],
+      bottomNavigationBar: _isContentAdmin
+          ? BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Tələbələr',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.edit_note),
+            label: 'Fənlər',
+          ),
+        ],
+      )
+          : null,
+    );
   }
 }
 
