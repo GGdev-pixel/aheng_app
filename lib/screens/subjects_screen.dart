@@ -9,6 +9,8 @@ import 'daily_settings_screen.dart';
 import '../theme/app_theme.dart';
 import 'statistics_screen.dart';
 import '../services/progress_service.dart';
+import '../widgets/streak_flame_icon.dart';
+import 'quiz_screen.dart';
 
 class SubjectsScreen extends StatelessWidget {
   const SubjectsScreen({super.key});
@@ -61,6 +63,8 @@ class SubjectsScreen extends StatelessWidget {
                   ),
                 );
               }),
+            const SizedBox(height: 20),
+            _UnfinishedTestCard(),
           ],
         );
       },
@@ -96,7 +100,7 @@ class _DailyCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.local_fire_department, color: AppColors.accentRed, size: 28),
+                        StreakFlameIcon(streak: streak),
                         const SizedBox(width: 8),
                         Text(
                           '$streak gün ardıcıl',
@@ -262,6 +266,77 @@ class _WeakTopicsCard extends StatelessWidget {
                   ),
                 ),
                 const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.accentRed),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+class _UnfinishedTestCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: ProgressService.getInProgressStream(),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) return const SizedBox.shrink();
+
+        final data = docs.first.data() as Map<String, dynamic>;
+        final subjectId = data['subjectId'] as String?;
+        final topicId = data['topicId'] as String?;
+        final subjectName = data['subjectName'] ?? '';
+        final topicName = data['topicName'] ?? '';
+        final currentIndex = data['currentIndex'] ?? 0;
+        final total = (data['questionIds'] as List?)?.length ?? 0;
+
+        if (subjectId == null || topicId == null) return const SizedBox.shrink();
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () async {
+            final subject = await ContentService.getSubjectOnce(subjectId);
+            final topic = await ContentService.getTopicOnce(subjectId, topicId);
+            if (subject == null || topic == null || !context.mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => QuizScreen(
+                  subject: subject,
+                  topic: topic,
+                  questionCount: null,
+                ),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.play_circle_outline, color: AppColors.warning),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Yarımçıq qalmış test',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                      Text(
+                        '$subjectName · $topicName — sual ${currentIndex + 1}/$total',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.warning),
               ],
             ),
           ),

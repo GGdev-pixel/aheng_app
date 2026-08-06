@@ -235,4 +235,38 @@ class ContentService {
 
     return newDoc.id;
   }
+  static Future<Subject?> getSubjectOnce(String subjectId) async {
+    final doc = await _db.collection('subjects').doc(subjectId).get();
+    if (!doc.exists) return null;
+    return Subject.fromFirestore(doc.id, doc.data()!);
+  }
+
+  static Future<Topic?> getTopicOnce(String subjectId, String topicId) async {
+    final doc = await _db
+        .collection('subjects')
+        .doc(subjectId)
+        .collection('topics')
+        .doc(topicId)
+        .get();
+    if (!doc.exists) return null;
+    return Topic.fromFirestore(doc.id, doc.data()!);
+  }
+  static Future<List<Question>> getQuestionsByIds(
+      String subjectId, String topicId, List<String> ids) async {
+    final List<Question> result = [];
+    for (var id in ids) {
+      final doc = await _db
+          .collection('subjects')
+          .doc(subjectId)
+          .collection('topics')
+          .doc(topicId)
+          .collection('questions')
+          .doc(id)
+          .get();
+      if (doc.exists) {
+        result.add(Question.fromFirestore(doc.id, doc.data()!));
+      }
+    }
+    return result;
+  }
 }

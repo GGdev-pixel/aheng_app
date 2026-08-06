@@ -7,6 +7,8 @@ import '../services/content_service.dart';
 import '../services/progress_service.dart';
 import 'daily_settings_screen.dart';
 import '../theme/app_theme.dart';
+import '../widgets/streak_flame_icon.dart';
+import '../widgets/streak_milestone_dialog.dart';
 
 class DailyQuizScreen extends StatefulWidget {
   const DailyQuizScreen({super.key});
@@ -147,6 +149,15 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
       'dailyLastCompleted': _todayKey,
       'dailyStreak': newStreak,
     });
+
+    const milestones = [10, 20, 50, 70, 100];
+    final crossedMilestone = milestones
+        .where((m) => currentStreak < m && newStreak >= m)
+        .toList();
+
+    if (crossedMilestone.isNotEmpty && mounted) {
+      await StreakMilestoneDialog.show(context, crossedMilestone.last);
+    }
 
     final questionsData = List.generate(_quizQuestions.length, (i) {
       final q = _quizQuestions[i];
@@ -331,8 +342,7 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.local_fire_department,
-                            color: Colors.orange, size: 24),
+                        StreakFlameIcon(streak: streak, baseSize: 24),
                         const SizedBox(width: 8),
                         Text(
                           '$streak gün ardıcıl',

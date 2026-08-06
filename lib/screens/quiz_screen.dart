@@ -11,8 +11,14 @@ import '../widgets/multi_select_game.dart';
 class QuizScreen extends StatefulWidget {
   final Subject subject;
   final Topic topic;
+  final int? questionCount;
 
-  const QuizScreen({super.key, required this.subject, required this.topic});
+  const QuizScreen({
+    super.key,
+    required this.subject,
+    required this.topic,
+    this.questionCount,
+  });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -25,22 +31,99 @@ class _QuizScreenState extends State<QuizScreen> {
   int? _selectedOption;
   bool _answered = false;
   List<int?> _userAnswers = [];
+  bool get _isFullMode => widget.questionCount == null;
 
   @override
   void initState() {
     super.initState();
-    _loadQuestions();
+    _init();
+  }
+
+  Future<void> _init() async {
+    if (_isFullMode) {
+      final saved = await ProgressService.getInProgress(
+        widget.subject.id,
+        widget.topic.id,
+      );
+      if (saved != null && mounted) {
+        final resume = await _askResume();
+        if (resume == true) {
+          await _restoreProgress(saved);
+          return;
+        } else {
+          await ProgressService.clearInProgress(widget.subject.id, widget.topic.id);
+        }
+      }
+    }
+    await _loadQuestions();
+  }
+
+  Future<bool?> _askResume() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Davam etmək'),
+        content: const Text(
+          'Bu mövzuda yarımçıq qalmış testiniz var. Davam etmək istəyirsiniz, yoxsa yenidən başlayaq?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Yenidən başla'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Davam et'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _restoreProgress(Map<String, dynamic> saved) async {
+    final ids = List<String>.from(saved['questionIds']);
+    final questions = await ContentService.getQuestionsByIds(
+      widget.subject.id,
+      widget.topic.id,
+      ids,
+    );
+    setState(() {
+      _quizQuestions = questions;
+      _currentIndex = saved['currentIndex'] ?? 0;
+      _userAnswers = List<int?>.from(saved['answers'] ?? []);
+      _correctCount = saved['correctCount'] ?? 0;
+    });
   }
 
   Future<void> _loadQuestions() async {
     final allQuestions =
     await ContentService.getQuestions(widget.subject.id, widget.topic.id).first;
     allQuestions.shuffle(Random());
-    final count = allQuestions.length < 10 ? allQuestions.length : 10;
+
+    final requested = widget.questionCount;
+    final count = requested == null
+        ? allQuestions.length
+        : (allQuestions.length < requested ? allQuestions.length : requested);
+
     setState(() {
       _quizQuestions = allQuestions.take(count).toList();
       _userAnswers = List<int?>.filled(_quizQuestions!.length, null);
     });
+  }
+
+  Future<void> _saveProgressIfNeeded() async {
+    if (!_isFullMode || _quizQuestions == null) return;
+    await ProgressService.saveInProgress(
+      subjectId: widget.subject.id,
+      topicId: widget.topic.id,
+      subjectName: widget.subject.name,
+      topicName: widget.topic.name,
+      questionIds: _quizQuestions!.map((q) => q.id).toList(),
+      currentIndex: _currentIndex,
+      answers: _userAnswers,
+      correctCount: _correctCount,
+    );
   }
 
   void _selectOption(int index) {
@@ -53,6 +136,7 @@ class _QuizScreenState extends State<QuizScreen> {
         _correctCount++;
       }
     });
+    _saveProgressIfNeeded();
   }
 
   void _nextQuestion() {
@@ -62,6 +146,7 @@ class _QuizScreenState extends State<QuizScreen> {
         _selectedOption = null;
         _answered = false;
       });
+      _saveProgressIfNeeded();
     } else {
       _showResult();
     }
@@ -92,6 +177,10 @@ class _QuizScreenState extends State<QuizScreen> {
       topicName: widget.topic.name,
       questionsData: questionsData,
     );
+
+    if (_isFullMode) {
+      ProgressService.clearInProgress(widget.subject.id, widget.topic.id);
+    }
 
     showDialog(
       context: context,
@@ -126,6 +215,7 @@ class _QuizScreenState extends State<QuizScreen> {
             _userAnswers[_currentIndex] = isCorrect ? 1 : 0;
             if (isCorrect) _correctCount++;
           });
+          _saveProgressIfNeeded();
         },
       );
     } else if (question.type == QuestionType.fillBlank) {
@@ -140,6 +230,7 @@ class _QuizScreenState extends State<QuizScreen> {
             _userAnswers[_currentIndex] = isCorrect ? 1 : 0;
             if (isCorrect) _correctCount++;
           });
+          _saveProgressIfNeeded();
         },
       );
     } else if (question.type == QuestionType.multiSelect) {
@@ -153,6 +244,7 @@ class _QuizScreenState extends State<QuizScreen> {
             _userAnswers[_currentIndex] = isCorrect ? 1 : 0;
             if (isCorrect) _correctCount++;
           });
+          _saveProgressIfNeeded();
         },
       );
     }

@@ -91,4 +91,69 @@ class ProgressService {
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
+  static Future<void> saveInProgress({
+    required String subjectId,
+    required String topicId,
+    required String subjectName,
+    required String topicName,
+    required List<String> questionIds,
+    required int currentIndex,
+    required List<int?> answers,
+    required int correctCount,
+  }) async {
+    final userId = _userId;
+    if (userId == null) return;
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('inProgress')
+        .doc('${subjectId}_$topicId')
+        .set({
+      'subjectId': subjectId,
+      'topicId': topicId,
+      'subjectName': subjectName,
+      'topicName': topicName,
+      'questionIds': questionIds,
+      'currentIndex': currentIndex,
+      'answers': answers,
+      'correctCount': correctCount,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  static Future<Map<String, dynamic>?> getInProgress(
+      String subjectId, String topicId) async {
+    final userId = _userId;
+    if (userId == null) return null;
+    final doc = await _db
+        .collection('users')
+        .doc(userId)
+        .collection('inProgress')
+        .doc('${subjectId}_$topicId')
+        .get();
+    if (!doc.exists) return null;
+    return doc.data();
+  }
+  static Stream<QuerySnapshot> getInProgressStream() {
+    final userId = _userId;
+    if (userId == null) return const Stream.empty();
+    return _db
+        .collection('users')
+        .doc(userId)
+        .collection('inProgress')
+        .orderBy('updatedAt', descending: true)
+        .limit(1)
+        .snapshots();
+  }
+
+  static Future<void> clearInProgress(String subjectId, String topicId) async {
+    final userId = _userId;
+    if (userId == null) return;
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('inProgress')
+        .doc('${subjectId}_$topicId')
+        .delete();
+  }
 }
