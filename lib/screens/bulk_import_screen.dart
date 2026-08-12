@@ -69,17 +69,12 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
         final cavab2 = _cellText(row, 4);
         final cavab3 = _cellText(row, 5);
         final cavab4 = _cellText(row, 6);
-        final duzgunRaw = _cellText(row, 7);
-        final imageFileName = _cellText(row, 8);
-        final tip = _cellText(row, 9).toLowerCase().trim();
-        if (row.length > 2 && _cellText(row, 2).contains('Əldə edilməsi qaydasına')) {
-          print('DEBUG row length: ${row.length}');
-          print('DEBUG col9 (tip): "${_cellText(row, 9)}"');
-          print('DEBUG col10 (ifadeler): "${_cellText(row, 10)}"');
-          print('DEBUG col11 (indices): "${_cellText(row, 11)}"');
-        }
-        final ifadelerRaw = _cellText(row, 10);
-        final duzgunIndekslerRaw = _cellText(row, 11);
+        final cavab5 = _cellText(row, 7);
+        final duzgunRaw = _cellText(row, 8);
+        final imageFileName = _cellText(row, 9);
+        final tip = _cellText(row, 10).toLowerCase().trim();
+        final ifadelerRaw = _cellText(row, 11);
+        final duzgunIndekslerRaw = _cellText(row, 12);
 
         if (subjectName.isEmpty || topicName.isEmpty) {
           _errors.add('Boş sətir keçildi');

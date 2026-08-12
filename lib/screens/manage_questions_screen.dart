@@ -20,6 +20,7 @@ class ManageQuestionsScreen extends StatelessWidget {
     final option2 = TextEditingController();
     final option3 = TextEditingController();
     final option4 = TextEditingController();
+    final option5 = TextEditingController();
     int correctIndex = 0;
     File? pickedImage;
     bool isUploading = false;
@@ -31,94 +32,97 @@ class ManageQuestionsScreen extends StatelessWidget {
           title: const Text('Yeni sual'),
           content: SizedBox(
             width: double.maxFinite,
-            height: 450,
+            height: 480,
             child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: textController,
-                  decoration: const InputDecoration(labelText: 'Sual mətni'),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                if (pickedImage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            pickedImage!,
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              print('IMAGE ERROR: $error');
-                              return Container(
-                                height: 150,
-                                color: Colors.grey.shade200,
-                                child: const Center(child: Text('Şəkil yüklənmədi')),
-                              );
-                            },
-                          ),
-                        ),
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.black54,
-                            ),
-                            onPressed: () {
-                              setDialogState(() => pickedImage = null);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: textController,
+                    decoration: const InputDecoration(labelText: 'Sual mətni'),
+                    maxLines: 2,
                   ),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final picker = ImagePicker();
-                    final picked =
-                    await picker.pickImage(source: ImageSource.gallery);
-                    if (picked != null) {
-                      setDialogState(() => pickedImage = File(picked.path));
-                    }
-                  },
-                  icon: const Icon(Icons.image),
-                  label: Text(pickedImage == null ? 'Şəkil əlavə et' : 'Şəkli dəyiş'),
-                ),
-                const SizedBox(height: 16),
-                for (int i = 0; i < 4; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Radio<int>(
-                          value: i,
-                          groupValue: correctIndex,
-                          onChanged: (value) {
-                            setDialogState(() => correctIndex = value!);
-                          },
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: [option1, option2, option3, option4][i],
-                            decoration: InputDecoration(
-                              labelText: 'Cavab ${i + 1}',
-                              helperText: correctIndex == i ? 'Düzgün cavab' : null,
+                  const SizedBox(height: 16),
+                  if (pickedImage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              pickedImage!,
+                              height: 150,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
                             ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.black54,
+                              ),
+                              onPressed: () {
+                                setDialogState(() => pickedImage = null);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        maxWidth: 1024,
+                        imageQuality: 70,
+                      );
+                      if (picked != null) {
+                        setDialogState(() => pickedImage = File(picked.path));
+                      }
+                    },
+                    icon: const Icon(Icons.image),
+                    label: Text(pickedImage == null ? 'Şəkil əlavə et' : 'Şəkli dəyiş'),
                   ),
-              ],
-            ),
+                  const SizedBox(height: 16),
+                  for (int i = 0; i < 5; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Radio<int>(
+                            value: i,
+                            groupValue: correctIndex,
+                            onChanged: (value) {
+                              setDialogState(() => correctIndex = value!);
+                            },
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: [
+                                option1,
+                                option2,
+                                option3,
+                                option4,
+                                option5
+                              ][i],
+                              decoration: InputDecoration(
+                                labelText: i < 4
+                                    ? 'Cavab ${i + 1}'
+                                    : 'Cavab 5 (istəyə bağlı)',
+                                helperText: correctIndex == i ? 'Düzgün cavab' : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -136,8 +140,17 @@ class ManageQuestionsScreen extends StatelessWidget {
                   option3.text.trim(),
                   option4.text.trim(),
                 ];
+                if (option5.text.trim().isNotEmpty) {
+                  options.add(option5.text.trim());
+                }
+
                 if (textController.text.trim().isEmpty ||
                     options.any((o) => o.isEmpty)) {
+                  return;
+                }
+
+                if (correctIndex >= options.length) {
+                  setDialogState(() {});
                   return;
                 }
 
