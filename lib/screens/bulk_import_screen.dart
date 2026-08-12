@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' as excel_lib;
@@ -14,7 +15,7 @@ class BulkImportScreen extends StatefulWidget {
 
 class _BulkImportScreenState extends State<BulkImportScreen> {
   String? _excelPath;
-  String? _imagesFolderPath;
+  Map<String, Uint8List> _imagesByName = {};
   bool _isImporting = false;
   int _processed = 0;
   int _total = 0;
@@ -31,10 +32,22 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
     }
   }
 
-  Future<void> _pickImagesFolder() async {
-    final path = await FilePicker.platform.getDirectoryPath();
-    if (path != null) {
-      setState(() => _imagesFolderPath = path);
+  Future<void> _pickImages() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg'],
+      allowMultiple: true,
+      withData: true,
+    );
+
+    if (result != null) {
+      final map = <String, Uint8List>{};
+      for (var file in result.files) {
+        if (file.bytes != null) {
+          map[file.name] = file.bytes!;
+        }
+      }
+      setState(() => _imagesByName = map);
     }
   }
 
@@ -59,9 +72,6 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
 
     for (var row in rows) {
       try {
-        // Sütun sırası:
-        // 0 Fənn | 1 Mövzu | 2 Sual | 3-6 Cavab1-4 | 7 DuzgunCavab | 8 Sekil
-        // 9 Tip | 10 Ifadeler | 11 DuzgunIndeksler
         final subjectName = _cellText(row, 0);
         final topicName = _cellText(row, 1);
         final questionText = _cellText(row, 2);
@@ -93,10 +103,11 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
         );
 
         String? imageUrl;
-        if (imageFileName.isNotEmpty && _imagesFolderPath != null) {
-          final imageFile = File('$_imagesFolderPath/$imageFileName');
-          if (await imageFile.exists()) {
-            imageUrl = await ContentService.uploadQuestionImage(imageFile);
+        if (imageFileName.isNotEmpty) {
+          final imgBytes = _imagesByName[imageFileName];
+          if (imgBytes != null) {
+            imageUrl = await ContentService.uploadQuestionImageBytes(
+                imgBytes, imageFileName);
           } else {
             _errors.add('Şəkil tapılmadı: $imageFileName');
           }
@@ -136,16 +147,20 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
             correctStatementIndices: correctIndices,
           );
         } else {
-          if (questionText.isEmpty) {
+          if (questionText.isEmpty && imageFileName.isEmpty) {
             _errors.add('Boş sətir keçildi');
             continue;
+          }
+          final options = [cavab1, cavab2, cavab3, cavab4];
+          if (cavab5.isNotEmpty) {
+            options.add(cavab5);
           }
           final correctIndex = (int.tryParse(duzgunRaw) ?? 1) - 1;
           await ContentService.addQuestion(
             subjectId: subject.first.id,
             topicId: topicId,
-            text: questionText,
-            options: [cavab1, cavab2, cavab3, cavab4],
+            text: questionText.isEmpty ? ' ' : questionText,
+            options: options,
             correctIndex: correctIndex,
             imageUrl: imageUrl,
           );
@@ -186,11 +201,11 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: _isImporting ? null : _pickImagesFolder,
-              icon: const Icon(Icons.folder),
-              label: Text(_imagesFolderPath == null
-                  ? 'Şəkillər qovluğu seç (məcburi deyil)'
-                  : 'Seçildi: ${_imagesFolderPath!.split('/').last}'),
+              onPressed: _isImporting ? null : _pickImages,
+              icon: const Icon(Icons.image),
+              label: Text(_imagesByName.isEmpty
+                  ? 'Şəkilləri seç (məcburi deyil)'
+                  : '${_imagesByName.length} şəkil seçildi'),
             ),
             const SizedBox(height: 24),
             if (_isImporting) ...[

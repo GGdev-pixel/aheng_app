@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/question.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
 
 class ContentService {
   static final _db = FirebaseFirestore.instance;
@@ -22,6 +23,13 @@ class ContentService {
     final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
     final ref = FirebaseStorage.instance.ref().child('question_images/$fileName');
     await ref.putFile(imageFile);
+    return await ref.getDownloadURL();
+  }
+
+  static Future<String> uploadQuestionImageBytes(Uint8List bytes, String fileName) async {
+    final safeName = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+    final ref = FirebaseStorage.instance.ref().child('question_images/$safeName');
+    await ref.putData(bytes);
     return await ref.getDownloadURL();
   }
 

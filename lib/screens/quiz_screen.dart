@@ -371,35 +371,43 @@ class _QuizScreenState extends State<QuizScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (question.imageUrl != null) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
-                          question.imageUrl!,
-                          width: double.infinity,
-                          height: 180,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return Container(
-                              height: 180,
-                              alignment: Alignment.center,
-                              child: const CircularProgressIndicator(),
-                            );
-                          },
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 100, maxHeight: 260),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            question.imageUrl!,
+                            fit: BoxFit.contain,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const SizedBox(
+                                height: 180,
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
                     ],
-                    Text(
-                      question.text,
-                      style: const TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w700,
-                        height: 1.3,
-                        color: AppColors.textPrimary,
+                    if (question.text.trim().isNotEmpty) ...[
+                      Text(
+                        question.text,
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
+                    ],
                     _buildOptions(question),
                   ],
                 ),
