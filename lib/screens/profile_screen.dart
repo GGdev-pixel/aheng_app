@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
 import 'statistics_screen.dart';
 import 'results_screen.dart';
+import '../theme/theme_controller.dart';
+import '../widgets/premium_dialog.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -89,7 +91,11 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           _TeacherCodeCard(),
+          const SizedBox(height: 16),
+          const _DarkModeSwitch(),
           const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          const _ExamDatePicker(),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -283,6 +289,172 @@ class _ProfileMenuCard extends StatelessWidget {
               ),
             ),
             const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _DarkModeSwitch extends StatefulWidget {
+  const _DarkModeSwitch();
+
+  @override
+  State<_DarkModeSwitch> createState() => _DarkModeSwitchState();
+}
+
+class _DarkModeSwitchState extends State<_DarkModeSwitch> {
+  bool _isPremium = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPremium();
+  }
+
+  Future<void> _checkPremium() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    final isPremium = doc.data()?['isPremium'] == true;
+    final savedDark = doc.data()?['darkModeEnabled'] == true;
+
+    if (mounted) {
+      setState(() {
+        _isPremium = isPremium;
+        _loading = false;
+      });
+    }
+
+    if (savedDark) {
+      ThemeController.themeMode.value = ThemeMode.dark;
+    }
+  }
+
+  Future<void> _toggle(bool value) async {
+    ThemeController.themeMode.value = value ? ThemeMode.dark : ThemeMode.light;
+
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'darkModeEnabled': value,
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const SizedBox.shrink();
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.themeMode,
+      builder: (context, mode, _) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                mode == ThemeMode.dark ? Icons.dark_mode : Icons.dark_mode_outlined,
+                size: 20,
+                color: Colors.grey.shade700,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text('Tünd rejim', style: TextStyle(fontWeight: FontWeight.w500)),
+              ),
+              Switch(
+                value: mode == ThemeMode.dark,
+                onChanged: _toggle,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ExamDatePicker extends StatefulWidget {
+  const _ExamDatePicker();
+
+  @override
+  State<_ExamDatePicker> createState() => _ExamDatePickerState();
+}
+
+class _ExamDatePickerState extends State<_ExamDatePicker> {
+  DateTime? _examDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+    final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final ts = doc.data()?['examDate'];
+    if (ts != null && mounted) {
+      setState(() => _examDate = (ts as Timestamp).toDate());
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _examDate ?? DateTime.now().add(const Duration(days: 30)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 730)),
+    );
+    if (picked == null) return;
+
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'examDate': Timestamp.fromDate(picked),
+    });
+    setState(() => _examDate = picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _examDate == null
+        ? 'İmtahan tarixi təyin edilməyib'
+        : '${_examDate!.day}.${_examDate!.month.toString().padLeft(2, '0')}.${_examDate!.year}';
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: _pickDate,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.event_outlined, size: 20, color: Colors.grey.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('İmtahan tarixi', style: TextStyle(fontWeight: FontWeight.w500)),
+                  Text(text, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400),
           ],
         ),
       ),

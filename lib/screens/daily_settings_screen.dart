@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/question.dart';
 import '../services/content_service.dart';
 import '../widgets/premium_dialog.dart';
+import '../theme/app_theme.dart';
 
 class DailySettingsScreen extends StatefulWidget {
   const DailySettingsScreen({super.key});
@@ -17,11 +18,49 @@ class _DailySettingsScreenState extends State<DailySettingsScreen> {
   int _selectedCount = 10;
   bool _loading = true;
   bool _isPremium = false;
+  bool _isAutoMode = false;
+  int? _suggestedCount;
+  bool _calculatingCount = false;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentSettings();
+  }
+
+  Future<void> _recalculateSuggestedCount() async {
+    if (_selectedSubjectIds.isEmpty) {
+      setState(() => _suggestedCount = null);
+      return;
+    }
+
+    setState(() => _calculatingCount = true);
+
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final examTs = userDoc.data()?['examDate'];
+
+    int daysLeft = 30;
+    if (examTs != null) {
+      final examDate = (examTs as Timestamp).toDate();
+      final diff = examDate.difference(DateTime.now()).inDays;
+      daysLeft = diff > 0 ? diff : 1;
+    }
+
+    int totalQuestions = 0;
+    for (var subjectId in _selectedSubjectIds) {
+      final questions = await ContentService.getAllQuestionsForSubject(subjectId);
+      totalQuestions += questions.length;
+    }
+
+    int suggested = (totalQuestions / daysLeft).ceil();
+    suggested = ((suggested / 5).round() * 5).clamp(10, 40);
+
+    setState(() {
+      _suggestedCount = suggested;
+      _selectedCount = suggested;
+      _calculatingCount = false;
+    });
   }
 
   Future<void> _loadCurrentSettings() async {
@@ -140,17 +179,66 @@ class _DailySettingsScreenState extends State<DailySettingsScreen> {
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [10, 20, 30].map((count) {
-                        final isSelected = _selectedCount == count;
-                        return ChoiceChip(
-                          label: Text('$count'),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            setState(() => _selectedCount = count);
+                      children: [
+                        ...[10, 20, 30].map((count) {
+                          final isSelected = !_isAutoMode && _selectedCount == count;
+                          return ChoiceChip(
+                            label: Text('$count'),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setState(() {
+                                _isAutoMode = false;
+                                _selectedCount = count;
+                              });
+                            },
+                          );
+                        }),
+                        ChoiceChip(
+                          label: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.auto_awesome, size: 14),
+                              SizedBox(width: 4),
+                              Text('Avto'),
+                            ],
+                          ),
+                          selected: _isAutoMode,
+                          onSelected: (_) async {
+                            setState(() => _isAutoMode = true);
+                            await _recalculateSuggestedCount();
                           },
-                        );
-                      }).toList(),
+                        ),
+                      ],
                     ),
+                    if (_isAutoMode) ...[
+                      const SizedBox(height: 12),
+                      if (_calculatingCount)
+                        const Center(child: Padding(
+                          padding: EdgeInsets.all(8),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ))
+                      else if (_suggestedCount != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlue.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.info_outline, size: 16, color: AppColors.primaryBlue),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '$_suggestedCount sual/gün təklif olunur. Hesablama: seçilmiş fənlərdəki cavablanmamış sualların sayı, imtahana qalan günlərə bölünür (imtahan tarixi təyin olunmayıbsa, 30 gün əsas götürülür).',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.primaryBlue),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ],
                 ),
               ),

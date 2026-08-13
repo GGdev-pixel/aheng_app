@@ -10,6 +10,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/teacher_screen.dart';
 import 'screens/statistics_screen.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_controller.dart';
+import 'widgets/study_plan_card.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,11 +26,18 @@ class AhengApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Ahəng',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const AuthGate(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.themeMode,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          title: 'Ahəng',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: mode,
+          home: const AuthGate(),
+        );
+      },
     );
   }
 }
@@ -121,6 +130,7 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
         centerTitle: true,
+        actions: const [StudyPlanBadge()],
       ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(

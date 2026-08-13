@@ -12,6 +12,7 @@ import '../services/progress_service.dart';
 import '../widgets/streak_flame_icon.dart';
 import 'quiz_screen.dart';
 import 'exam_screen.dart';
+import '../widgets/study_plan_card.dart';
 
 class SubjectsScreen extends StatelessWidget {
   const SubjectsScreen({super.key});
