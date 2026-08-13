@@ -6,6 +6,7 @@ import '../services/content_service.dart';
 import '../services/progress_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/trend_chart.dart';
+import '../widgets/weak_topics_panel.dart';
 
 class StatisticsScreen extends StatelessWidget {
   final String? userId;
@@ -56,6 +57,8 @@ class StatisticsScreen extends StatelessWidget {
                   totalCorrect: totalCorrect,
                   userId: userId,
                 ),
+                const SizedBox(height: 20),
+                WeakTopicsPanel(userId: userId),
                 const SizedBox(height: 20),
                 _TrendSection(userId: userId),
                 const SizedBox(height: 20),

@@ -134,6 +134,38 @@ class ProgressService {
     if (!doc.exists) return null;
     return doc.data();
   }
+
+  static Future<List<Map<String, dynamic>>> getWrongQuestionsForTopic({
+    required String subjectId,
+    required String topicId,
+    String? userId,
+  }) async {
+    final uid = userId ?? _userId;
+    if (uid == null) return [];
+
+    final snapshot = await _db
+        .collection('users')
+        .doc(uid)
+        .collection('results')
+        .where('subjectId', isEqualTo: subjectId)
+        .where('topicId', isEqualTo: topicId)
+        .get();
+
+    final Map<String, Map<String, dynamic>> wrongByText = {};
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final questions = List<Map<String, dynamic>>.from(
+        (data['questions'] as List).map((q) => Map<String, dynamic>.from(q)),
+      );
+      for (var q in questions) {
+        if (q['selectedIndex'] != q['correctIndex']) {
+          wrongByText[q['text']] = q;
+        }
+      }
+    }
+    return wrongByText.values.toList();
+  }
+
   static Stream<QuerySnapshot> getInProgressStream() {
     final userId = _userId;
     if (userId == null) return const Stream.empty();
