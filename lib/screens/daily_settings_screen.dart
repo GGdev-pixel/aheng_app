@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/question.dart';
 import '../services/content_service.dart';
+import '../widgets/premium_dialog.dart';
 
 class DailySettingsScreen extends StatefulWidget {
   const DailySettingsScreen({super.key});
@@ -15,6 +16,7 @@ class _DailySettingsScreenState extends State<DailySettingsScreen> {
   Set<String> _selectedSubjectIds = {};
   int _selectedCount = 10;
   bool _loading = true;
+  bool _isPremium = false;
 
   @override
   void initState() {
@@ -30,6 +32,7 @@ class _DailySettingsScreenState extends State<DailySettingsScreen> {
         .collection('users')
         .doc(userId)
         .get();
+    _isPremium = doc.data()?['isPremium'] == true;
 
     final data = doc.data();
     if (data != null && data['dailySettings'] != null) {
@@ -83,10 +86,27 @@ class _DailySettingsScreenState extends State<DailySettingsScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    const Text(
-                      'Fənlər',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        const Text(
+                          'Fənlər',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        if (!_isPremium) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              '1 fənn (pulsuz)',
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 8),
                     ...subjects.map((subject) {
@@ -96,6 +116,13 @@ class _DailySettingsScreenState extends State<DailySettingsScreen> {
                         onChanged: (checked) {
                           setState(() {
                             if (checked == true) {
+                              if (!_isPremium && _selectedSubjectIds.isNotEmpty) {
+                                PremiumDialog.show(
+                                  context,
+                                  message: 'Bir neçə fənn üzrə gündəlik suallar üçün Premium abunəlik lazımdır.',
+                                );
+                                return;
+                              }
                               _selectedSubjectIds.add(subject.id);
                             } else {
                               _selectedSubjectIds.remove(subject.id);

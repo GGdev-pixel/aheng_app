@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/question.dart';
 import '../services/content_service.dart';
 import 'quiz_screen.dart';
+import 'exam_screen.dart';
 
 class TopicsScreen extends StatelessWidget {
   final Subject subject;
@@ -11,6 +12,24 @@ class TopicsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final questions = await ContentService.getExamQuestionsForSubject(subject.id, 20);
+          if (questions.isEmpty || !context.mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ExamScreen(
+                title: '${subject.name} — İmtahan',
+                questions: questions,
+                durationMinutes: 20,
+              ),
+            ),
+          );
+        },
+        icon: const Icon(Icons.timer_outlined),
+        label: const Text('İmtahan rejimi'),
+      ),
       appBar: AppBar(title: Text(subject.name)),
       body: StreamBuilder<List<Topic>>(
         stream: ContentService.getTopics(subject.id),

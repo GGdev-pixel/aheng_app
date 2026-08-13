@@ -3,6 +3,7 @@ import '../models/question.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:typed_data';
+import 'dart:math';
 
 class ContentService {
   static final _db = FirebaseFirestore.instance;
@@ -17,6 +18,35 @@ class ContentService {
         .map((snapshot) => snapshot.docs
         .map((doc) => Subject.fromFirestore(doc.id, doc.data()))
         .toList());
+  }
+
+  static Future<List<Question>> getExamQuestionsForSubject(
+      String subjectId, int count) async {
+    final allQuestions = await getAllQuestionsForSubject(subjectId);
+    final onlyStandard =
+    allQuestions.where((q) => q.type == QuestionType.multipleChoice).toList();
+    onlyStandard.shuffle(Random());
+    final take = onlyStandard.length < count ? onlyStandard.length : count;
+    return onlyStandard.take(take).toList();
+  }
+
+  static Future<Map<String, List<Question>>> getFullExamQuestions() async {
+    final subjects = await getSubjectsOnce();
+    final Map<String, int> proportions = {
+      'Qanunvericilik': 40,
+      'Məntiq': 30,
+      'Azərbaycan dili': 15,
+      'İnformatika': 15,
+    };
+
+    final Map<String, List<Question>> result = {};
+    for (var subject in subjects) {
+      final wantedCount = proportions[subject.name];
+      if (wantedCount == null) continue;
+      final questions = await getExamQuestionsForSubject(subject.id, wantedCount);
+      result[subject.name] = questions;
+    }
+    return result;
   }
 
   static Future<String> uploadQuestionImage(File imageFile) async {

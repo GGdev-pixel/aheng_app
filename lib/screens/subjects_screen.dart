@@ -11,6 +11,7 @@ import 'statistics_screen.dart';
 import '../services/progress_service.dart';
 import '../widgets/streak_flame_icon.dart';
 import 'quiz_screen.dart';
+import 'exam_screen.dart';
 
 class SubjectsScreen extends StatelessWidget {
   const SubjectsScreen({super.key});
@@ -65,6 +66,8 @@ class SubjectsScreen extends StatelessWidget {
               }),
             const SizedBox(height: 20),
             _UnfinishedTestCard(),
+            const SizedBox(height: 16),
+            _FullExamCard(),
           ],
         );
       },
@@ -342,6 +345,61 @@ class _UnfinishedTestCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+class _FullExamCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () async {
+        final examData = await ContentService.getFullExamQuestions();
+        final allQuestions = examData.values.expand((list) => list).toList();
+        allQuestions.shuffle();
+        if (allQuestions.isEmpty || !context.mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ExamScreen(
+              title: 'Tam imtahan simulyasiyası',
+              questions: allQuestions,
+              durationMinutes: 90,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primaryBlue, AppColors.primaryBlue.withOpacity(0.8)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.school, color: Colors.white),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tam imtahan simulyasiyası',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '100 sual · 90 dəqiqə',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
+          ],
+        ),
+      ),
     );
   }
 }
