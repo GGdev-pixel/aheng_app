@@ -5,13 +5,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/question.dart';
 import '../services/content_service.dart';
 import '../services/progress_service.dart';
-import 'daily_settings_screen.dart';
 import '../theme/app_theme.dart';
-import '../widgets/streak_flame_icon.dart';
 import '../widgets/streak_milestone_dialog.dart';
+import '../widgets/premium_dialog.dart';
+import 'daily_settings_screen.dart';
+import 'daily_result_screen.dart';
 
 class DailyQuizScreen extends StatefulWidget {
-  const DailyQuizScreen({super.key});
+  final bool isRetake;
+  final List<Question>? customQuestions;
+
+  const DailyQuizScreen({
+    super.key,
+    this.isRetake = false,
+    this.customQuestions,
+  });
 
   @override
   State<DailyQuizScreen> createState() => _DailyQuizScreenState();
@@ -21,16 +29,15 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
   bool _loading = true;
   bool _alreadyDoneToday = false;
   bool _noSettings = false;
-  bool _isRetryMode = false;
+  bool _isPremiumUser = false;
 
   List<Question> _quizQuestions = [];
   List<int?> _userAnswers = [];
-  List<Question> _wrongQuestions = [];
 
   int _currentIndex = 0;
-  int _correctCount = 0;
   int? _selectedOption;
-  bool _answered = false;
+
+  bool get _isMistakeRound => widget.customQuestions != null;
 
   String get _todayKey {
     final now = DateTime.now();
@@ -44,6 +51,16 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
   }
 
   Future<void> _init() async {
+    if (_isMistakeRound) {
+      final qs = widget.customQuestions!;
+      setState(() {
+        _quizQuestions = qs;
+        _userAnswers = List<int?>.filled(qs.length, null);
+        _loading = false;
+      });
+      return;
+    }
+
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
@@ -55,6 +72,7 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
     final data = doc.data();
     final lastCompleted = data?['dailyLastCompleted'];
     final settings = data?['dailySettings'] as Map<String, dynamic>?;
+    final isPremium = data?['isPremium'] == true;
 
     if (settings == null || (settings['subjectIds'] as List?)?.isEmpty != false) {
       setState(() {
@@ -64,9 +82,10 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
       return;
     }
 
-    if (lastCompleted == _todayKey) {
+    if (lastCompleted == _todayKey && !widget.isRetake) {
       setState(() {
         _alreadyDoneToday = true;
+        _isPremiumUser = isPremium;
         _loading = false;
       });
       return;
@@ -92,18 +111,9 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
   }
 
   void _selectOption(int index) {
-    if (_answered) return;
     setState(() {
       _selectedOption = index;
-      _answered = true;
       _userAnswers[_currentIndex] = index;
-
-      final question = _quizQuestions[_currentIndex];
-      if (index == question.correctIndex) {
-        _correctCount++;
-      } else if (!_isRetryMode) {
-        _wrongQuestions.add(question);
-      }
     });
   }
 
@@ -111,15 +121,10 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
     if (_currentIndex < _quizQuestions.length - 1) {
       setState(() {
         _currentIndex++;
-        _selectedOption = null;
-        _answered = false;
+        _selectedOption = _userAnswers[_currentIndex];
       });
     } else {
-      if (_isRetryMode) {
-        _showRetryResult();
-      } else {
-        _finish();
-      }
+      _finish();
     }
   }
 
@@ -127,143 +132,82 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
-    final userDoc = await userRef.get();
-    final data = userDoc.data();
-
-    final lastCompleted = data?['dailyLastCompleted'];
-    final currentStreak = data?['dailyStreak'] ?? 0;
-
-    final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    final yesterdayKey =
-        '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
-
-    int newStreak;
-    if (lastCompleted == yesterdayKey) {
-      newStreak = currentStreak + 1;
-    } else {
-      newStreak = 1;
-    }
-
-    await userRef.update({
-      'dailyLastCompleted': _todayKey,
-      'dailyStreak': newStreak,
-    });
-
-    const milestones = [10, 20, 50, 70, 100];
-    final crossedMilestone = milestones
-        .where((m) => currentStreak < m && newStreak >= m)
-        .toList();
-
-    if (crossedMilestone.isNotEmpty && mounted) {
-      await StreakMilestoneDialog.show(context, crossedMilestone.last);
-    }
-
-    final questionsData = List.generate(_quizQuestions.length, (i) {
+    int correctCount = 0;
+    final wrongQuestions = <Question>[];
+    for (var i = 0; i < _quizQuestions.length; i++) {
       final q = _quizQuestions[i];
-      return {
-        'text': q.text,
-        'options': q.options,
-        'correctIndex': q.correctIndex,
-        'selectedIndex': _userAnswers[i],
-      };
-    });
+      if (_userAnswers[i] == q.correctIndex) {
+        correctCount++;
+      } else {
+        wrongQuestions.add(q);
+      }
+    }
 
-    await ProgressService.saveQuizAttempt(
-      subjectId: 'daily',
-      subjectName: 'Gündəlik suallar',
-      topicId: _todayKey,
-      topicName: _todayKey,
-      questionsData: questionsData,
-    );
+    if (!_isMistakeRound && !widget.isRetake) {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+      final userDoc = await userRef.get();
+      final data = userDoc.data();
+
+      final lastCompleted = data?['dailyLastCompleted'];
+      final currentStreak = data?['dailyStreak'] ?? 0;
+
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final yesterdayKey =
+          '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+
+      int newStreak;
+      if (lastCompleted == yesterdayKey) {
+        newStreak = currentStreak + 1;
+      } else {
+        newStreak = 1;
+      }
+
+      await userRef.update({
+        'dailyLastCompleted': _todayKey,
+        'dailyStreak': newStreak,
+      });
+
+      const milestones = [10, 20, 50, 70, 100];
+      final crossedMilestone = milestones
+          .where((m) => currentStreak < m && newStreak >= m)
+          .toList();
+
+      if (crossedMilestone.isNotEmpty && mounted) {
+        await StreakMilestoneDialog.show(context, crossedMilestone.last);
+      }
+    }
+
+    if (!_isMistakeRound) {
+      final questionsData = List.generate(_quizQuestions.length, (i) {
+        final q = _quizQuestions[i];
+        return {
+          'text': q.text,
+          'options': q.options,
+          'correctIndex': q.correctIndex,
+          'selectedIndex': _userAnswers[i],
+        };
+      });
+
+      await ProgressService.saveQuizAttempt(
+        subjectId: 'daily',
+        subjectName: 'Gündəlik suallar',
+        topicId: _todayKey,
+        topicName: _todayKey,
+        questionsData: questionsData,
+      );
+    }
 
     if (!mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Təbriklər!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Bugünkü ${_quizQuestions.length} sualdan $_correctCount-nə düzgün cavab verdiniz.',
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.local_fire_department, color: Colors.orange, size: 28),
-                const SizedBox(width: 8),
-                Text(
-                  '$newStreak gün',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ],
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DailyResultScreen(
+          questions: _quizQuestions,
+          answers: _userAnswers,
+          correctCount: correctCount,
+          wrongQuestions: wrongQuestions,
         ),
-        actions: [
-          if (_wrongQuestions.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _startRetry();
-              },
-              child: const Text('Səhvləri düzəldək'),
-            ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Bağla'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _startRetry() {
-    setState(() {
-      _isRetryMode = true;
-      _quizQuestions = List<Question>.from(_wrongQuestions);
-      _userAnswers = List<int?>.filled(_quizQuestions.length, null);
-      _wrongQuestions = [];
-      _currentIndex = 0;
-      _correctCount = 0;
-      _selectedOption = null;
-      _answered = false;
-    });
-  }
-
-  void _showRetryResult() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Nəticə'),
-        content: Text(
-          '${_quizQuestions.length} sualdan $_correctCount-nə düzgün cavab verdiniz.',
-        ),
-        actions: [
-          if (_wrongQuestions.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _startRetry();
-              },
-              child: const Text('Yenidən cəhd et'),
-            ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Bağla'),
-          ),
-        ],
       ),
     );
   }
@@ -342,7 +286,8 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        StreakFlameIcon(streak: streak, baseSize: 24),
+                        const Icon(Icons.local_fire_department,
+                            color: Colors.orange, size: 24),
                         const SizedBox(width: 8),
                         Text(
                           '$streak gün ardıcıl',
@@ -355,6 +300,26 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
                     Text(
                       'Sabah yenidən qayıdın',
                       style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        if (_isPremiumUser) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DailyQuizScreen(isRetake: true),
+                            ),
+                          );
+                        } else {
+                          PremiumDialog.show(
+                            context,
+                            message: 'Gündəlik sualları limitsiz təkrarlamaq üçün Premium abunəlik lazımdır.',
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.replay),
+                      label: const Text('Yenidən başla'),
                     ),
                   ],
                 ),
@@ -376,144 +341,141 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isRetryMode ? 'Səhvlərin düzəlişi' : 'Gündəlik suallar'),
+        title: Text(_isMistakeRound ? 'Səhvlərin düzəlişi' : 'Gündəlik suallar'),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: (_currentIndex + 1) / _quizQuestions.length,
-                  minHeight: 6,
-                  backgroundColor: Colors.grey.shade200,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Sual ${_currentIndex + 1} / ${_quizQuestions.length}',
-                  style: const TextStyle(
-                    color: AppColors.primaryBlue,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: (_currentIndex + 1) / _quizQuestions.length,
+                      minHeight: 6,
+                      backgroundColor: Colors.grey.shade200,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              if (question.imageUrl != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    question.imageUrl!,
-                    width: double.infinity,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
-                        height: 180,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(),
-                      );
-                    },
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Sual ${_currentIndex + 1} / ${_quizQuestions.length}',
+                      style: const TextStyle(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              Text(
-                question.text,
-                style: const TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
-                  color: AppColors.textPrimary,
-                ),
+                ],
               ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: ListView(
-                  children: List.generate(question.options.length, (index) {
-                    final isSelected = _selectedOption == index;
-                    final isCorrect = index == question.correctIndex;
-
-                    Color borderColor = Colors.grey.shade300;
-                    Color bgColor = Colors.white;
-                    Color textColor = AppColors.textPrimary;
-                    IconData? trailingIcon;
-
-                    if (_answered) {
-                      if (isCorrect) {
-                        borderColor = AppColors.success;
-                        bgColor = AppColors.success.withOpacity(0.08);
-                        textColor = AppColors.success;
-                        trailingIcon = Icons.check_circle;
-                      } else if (isSelected) {
-                        borderColor = AppColors.accentRed;
-                        bgColor = AppColors.accentRed.withOpacity(0.08);
-                        textColor = AppColors.accentRed;
-                        trailingIcon = Icons.cancel;
-                      }
-                    }
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () => _selectOption(index),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 16),
-                          decoration: BoxDecoration(
-                            color: bgColor,
-                            border: Border.all(color: borderColor, width: 1.5),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  question.options[index],
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: textColor,
-                                  ),
-                                ),
-                              ),
-                              if (trailingIcon != null)
-                                Icon(trailingIcon, color: textColor, size: 20),
-                            ],
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (question.imageUrl != null) ...[
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 100, maxHeight: 260),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            question.imageUrl!,
+                            fit: BoxFit.contain,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const SizedBox(
+                                height: 180,
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            },
                           ),
                         ),
                       ),
-                    );
-                  }),
+                      const SizedBox(height: 16),
+                    ],
+                    if (question.text.trim().isNotEmpty) ...[
+                      Text(
+                        question.text,
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    ...List.generate(question.options.length, (index) {
+                      final isSelected = _selectedOption == index;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => _selectOption(index),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryBlue.withOpacity(0.08)
+                                  : Colors.white,
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primaryBlue
+                                    : Colors.grey.shade300,
+                                width: 1.5,
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              question.options[index],
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: isSelected
+                                    ? AppColors.primaryBlue
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
                 ),
               ),
-              if (_answered)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _nextQuestion,
-                    child: Text(
-                      _currentIndex < _quizQuestions.length - 1
-                          ? 'Növbəti sual'
-                          : 'Bitir',
-                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _selectedOption != null ? _nextQuestion : null,
+                  child: Text(
+                    _currentIndex < _quizQuestions.length - 1 ? 'Növbəti sual' : 'Bitir',
                   ),
                 ),
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );
