@@ -247,6 +247,57 @@ class _QuizScreenState extends State<QuizScreen> {
           _saveProgressIfNeeded();
         },
       );
+    } else if (question.type == QuestionType.imageOptions) {
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+      return GridView.count(
+        crossAxisCount: 3,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 1.6,
+        children: List.generate(letters.length, (index) {
+          final isSelected = _selectedOption == index;
+          final isCorrect = index == question.correctIndex;
+
+          Color borderColor = Colors.grey.shade300;
+          Color bgColor = Colors.white;
+          Color textColor = AppColors.textPrimary;
+
+          if (_answered) {
+            if (isCorrect) {
+              borderColor = AppColors.success;
+              bgColor = AppColors.success.withOpacity(0.08);
+              textColor = AppColors.success;
+            } else if (isSelected) {
+              borderColor = AppColors.accentRed;
+              bgColor = AppColors.accentRed.withOpacity(0.08);
+              textColor = AppColors.accentRed;
+            }
+          }
+
+          return InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => _selectOption(index),
+            child: Container(
+              decoration: BoxDecoration(
+                color: bgColor,
+                border: Border.all(color: borderColor, width: 1.5),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                letters[index],
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+            ),
+          );
+        }),
+      );
     }
 
     return Column(

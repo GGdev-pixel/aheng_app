@@ -1,4 +1,4 @@
-enum QuestionType { multipleChoice, wordScramble, matching, fillBlank, multiSelect }
+enum QuestionType { multipleChoice, wordScramble, matching, fillBlank, multiSelect, imageOptions }
 
 class Question {
   final String id;

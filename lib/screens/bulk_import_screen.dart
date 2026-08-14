@@ -146,6 +146,23 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
             statements: statements,
             correctStatementIndices: correctIndices,
           );
+
+        } else if (tip == 'imageoptions') {
+          if (imageFileName.isEmpty) {
+            _errors.add('Şəkilli sual üçün şəkil tələb olunur: "$questionText"');
+            continue;
+          }
+          final correctIndex = (int.tryParse(duzgunRaw) ?? 1) - 1;
+          await ContentService.addQuestion(
+            subjectId: subject.first.id,
+            topicId: topicId,
+            text: questionText.isEmpty ? ' ' : questionText,
+            options: const [],
+            correctIndex: correctIndex,
+            imageUrl: imageUrl,
+            type: QuestionType.imageOptions,
+          );
+
         } else {
           if (questionText.isEmpty && imageFileName.isEmpty) {
             _errors.add('Boş sətir keçildi');
