@@ -10,6 +10,7 @@ import '../widgets/streak_milestone_dialog.dart';
 import '../widgets/premium_dialog.dart';
 import 'daily_settings_screen.dart';
 import 'daily_result_screen.dart';
+import 'package:home_widget/home_widget.dart';
 
 class DailyQuizScreen extends StatefulWidget {
   final bool isRetake;
@@ -166,6 +167,12 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
         'dailyLastCompleted': _todayKey,
         'dailyStreak': newStreak,
       });
+
+      await HomeWidget.saveWidgetData<int>('streak_count', newStreak);
+      await HomeWidget.updateWidget(
+        name: 'StreakWidget',
+        androidName: 'StreakWidget',
+      );
 
       const milestones = [10, 20, 50, 70, 100];
       final crossedMilestone = milestones

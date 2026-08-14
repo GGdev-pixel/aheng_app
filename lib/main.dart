@@ -12,6 +12,7 @@ import 'screens/statistics_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 import 'widgets/study_plan_card.dart';
+import 'package:home_widget/home_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,6 +80,7 @@ class AuthGate extends StatelessWidget {
               return const TeacherScreen();
             }
 
+            _syncWidgetData(authSnapshot.data!.uid);
             return const MainScreen();
           },
         );
@@ -158,4 +160,11 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+}
+
+void _syncWidgetData(String userId) async {
+  final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+  final streak = doc.data()?['dailyStreak'] ?? 0;
+  await HomeWidget.saveWidgetData<int>('streak_count', streak);
+  await HomeWidget.updateWidget(name: 'StreakWidget', androidName: 'StreakWidget');
 }
