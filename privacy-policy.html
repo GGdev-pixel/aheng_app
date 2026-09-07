@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Məxfilik Siyasəti — Ahəng</title>
+<style>
+  :root {
+    --primary-blue: #1B3A6B;
+    --accent-red: #D7263D;
+    --text-primary: #1A1D29;
+    --text-secondary: #5B6270;
+    --border: #E4E7EC;
+    --bg: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-primary);
+    background: var(--bg);
+    line-height: 1.65;
+  }
+
+  header {
+    padding: 48px 24px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-mark {
+    width: 10px;
+    height: 32px;
+    background: var(--accent-red);
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-size: 22px;
+    margin: 0;
+    color: var(--primary-blue);
+    font-weight: 700;
+  }
+
+  header p.subtitle {
+    margin: 2px 0 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .updated {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+  }
+
+  section {
+    margin-bottom: 36px;
+  }
+
+  h2 {
+    font-size: 17px;
+    color: var(--primary-blue);
+    border-left: 3px solid var(--accent-red);
+    padding-left: 12px;
+    margin: 0 0 14px;
+  }
+
+  p {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+
+  ul {
+    margin: 0 0 12px;
+    padding-left: 20px;
+  }
+
+  li {
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .service-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .service-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+
+  .service-item .name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--primary-blue);
+  }
+
+  .service-item .desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .contact-box {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    background: #F7F8FA;
+  }
+
+  .contact-box p {
+    margin: 0;
+  }
+
+  .contact-box a {
+    color: var(--primary-blue);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .contact-box a:hover {
+    text-decoration: underline;
+  }
+
+  footer {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px 48px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-mark"></div>
+    <div>
+      <h1>Ahəng</h1>
+      <p class="subtitle">Məxfilik Siyasəti</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p class="updated">Son yenilənmə: 2026</p>
+
+  <section>
+    <h2>Giriş</h2>
+    <p>
+      Bu Məxfilik Siyasəti "Ahəng" tətbiqinin (bundan sonra — "tətbiq") istifadəçilərinin
+      şəxsi məlumatlarının necə toplandığını, istifadə olunduğunu və qorunduğunu izah edir.
+      Tətbiqdən istifadə etməklə siz bu siyasətin şərtləri ilə razılaşmış olursunuz.
+    </p>
+  </section>
+
+  <section>
+    <h2>Topladığımız məlumatlar</h2>
+    <p>Tətbiqə qeydiyyatdan keçərkən və istifadə zamanı aşağıdakı məlumatlar toplanır:</p>
+    <ul>
+      <li>E-poçt ünvanı və ad (qeydiyyat zamanı)</li>
+      <li>İstifadəçi rolu (tələbə və ya müəllim)</li>
+      <li>Test nəticələri və proqres statistikası (cavablanan suallar, düzgün cavabların sayı, mövzular üzrə irəliləyiş)</li>
+      <li>Gündəlik məşq seriyası (streak) məlumatları</li>
+      <li>Abunəlik statusu (Premium istifadəçi olub-olmaması)</li>
+      <li>Müəllim-tələbə əlaqəsi (tələbənin hansı müəllimə bağlı olduğu)</li>
+    </ul>
+    <p>
+      Tətbiq həssas kateqoriyalara aid məlumatları (sağlamlıq, maliyyə, irqi mənsubiyyət və s.)
+      toplamır.
+    </p>
+  </section>
+
+  <section>
+    <h2>Məlumatlardan necə istifadə edirik</h2>
+    <p>Toplanan məlumatlar aşağıdakı məqsədlər üçün istifadə olunur:</p>
+    <ul>
+      <li>Hesabınızın yaradılması və idarə olunması</li>
+      <li>Şəxsi proqres və statistikanın hesablanması və göstərilməsi</li>
+      <li>Müəllimlərin öz tələbələrinin nəticələrini izləməsi</li>
+      <li>Premium funksiyaların (imtahan rejimi, limitsiz gündəlik suallar və s.) təmin edilməsi</li>
+      <li>Tətbiqin funksionallığının təkmilləşdirilməsi</li>
+    </ul>
+    <p>Məlumatlarınız satılmır və reklam məqsədilə üçüncü tərəflərlə paylaşılmır.</p>
+  </section>
+
+  <section>
+    <h2>İstifadə olunan xidmətlər</h2>
+    <p>Tətbiq məlumatların saxlanması və emalı üçün aşağıdakı xidmətlərdən istifadə edir:</p>
+    <div class="service-list">
+      <div class="service-item">
+        <div class="name">Firebase Authentication (Google)</div>
+        <div class="desc">Hesab qeydiyyatı və giriş üçün</div>
+      </div>
+      <div class="service-item">
+        <div class="name">Firebase Firestore (Google)</div>
+        <div class="desc">İstifadəçi məlumatlarının və test nəticələrinin saxlanması üçün</div>
+      </div>
+      <div class="service-item">
+        <div class="name">Firebase Storage (Google)</div>
+        <div class="desc">Suallara əlavə edilən şəkillərin saxlanması üçün</div>
+      </div>
+    </div>
+    <p>
+      Bu xidmətlər Google LLC tərəfindən idarə olunur və öz məxfilik siyasətlərinə tabedir.
+    </p>
+  </section>
+
+  <section>
+    <h2>Məlumatların saxlanması və silinməsi</h2>
+    <p>
+      Məlumatlarınız hesabınız aktiv olduğu müddətdə saxlanılır. Hesabınızın və ona aid bütün
+      məlumatların silinməsini tələb etmək üçün aşağıdakı əlaqə vasitəsi ilə bizimlə əlaqə
+      saxlaya bilərsiniz.
+    </p>
+  </section>
+
+  <section>
+    <h2>Uşaqların məxfiliyi</h2>
+    <p>
+      Tətbiq dövlət qulluğu imtahanına hazırlaşan yetkin istifadəçilər üçün nəzərdə tutulub.
+      Tətbiq şüurlu şəkildə 13 yaşdan aşağı uşaqlardan məlumat toplamır.
+    </p>
+  </section>
+
+  <section>
+    <h2>Dəyişikliklər</h2>
+    <p>
+      Bu siyasət zaman-zaman yenilənə bilər. Əhəmiyyətli dəyişikliklər olduqda istifadəçilər
+      tətbiq daxilində məlumatlandırılacaq.
+    </p>
+  </section>
+
+  <section>
+    <h2>Əlaqə</h2>
+    <div class="contact-box">
+      <p>
+        Bu Məxfilik Siyasəti ilə bağlı suallarınız varsa, bizimlə əlaqə saxlaya bilərsiniz:<br>
+        <a href="mailto:EMAIL_BURAYA">EMAIL_BURAYA</a>
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  © 2026 Ahəng. Bütün hüquqlar qorunur.
+</footer>
+
+</body>
+</html>
