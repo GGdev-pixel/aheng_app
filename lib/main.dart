@@ -15,6 +15,7 @@ import 'widgets/study_plan_card.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'dart:ui';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +30,9 @@ void main() async {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+
+  await NotificationService.init();
+  await NotificationService.scheduleDailyReminder();
 
   runApp(const AhengApp());
 }

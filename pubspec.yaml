@@ -45,6 +45,8 @@ dependencies:
   home_widget: ^0.9.3
   firebase_crashlytics: ^5.3.0
   in_app_purchase: ^3.3.0
+  flutter_local_notifications: 18.0.1
+  timezone: 0.9.4
 
 dev_dependencies:
   flutter_test:
