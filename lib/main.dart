@@ -16,6 +16,8 @@ import 'package:home_widget/home_widget.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'dart:ui';
 import 'services/notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,7 +53,7 @@ class AhengApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: mode,
-          home: const AuthGate(),
+            home: const _StartupDecider(),
         );
       },
     );
@@ -182,4 +184,26 @@ void _syncWidgetData(String userId) async {
   final streak = doc.data()?['dailyStreak'] ?? 0;
   await HomeWidget.saveWidgetData<int>('streak_count', streak);
   await HomeWidget.updateWidget(name: 'StreakWidget', androidName: 'StreakWidget');
+}
+
+class _StartupDecider extends StatelessWidget {
+  const _StartupDecider();
+
+  Future<bool> _hasSeenOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('hasSeenOnboarding') ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _hasSeenOnboarding(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        return snapshot.data! ? const AuthGate() : const OnboardingScreen();
+      },
+    );
+  }
 }
