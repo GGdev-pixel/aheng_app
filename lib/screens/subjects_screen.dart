@@ -297,53 +297,77 @@ class _UnfinishedTestCard extends StatelessWidget {
 
         if (subjectId == null || topicId == null) return const SizedBox.shrink();
 
-        return InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () async {
-            final subject = await ContentService.getSubjectOnce(subjectId);
-            final topic = await ContentService.getTopicOnce(subjectId, topicId);
-            if (subject == null || topic == null || !context.mounted) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => QuizScreen(
-                  subject: subject,
-                  topic: topic,
-                  questionCount: null,
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () async {
+                final subject = await ContentService.getSubjectOnce(subjectId);
+                final topic = await ContentService.getTopicOnce(subjectId, topicId);
+                if (subject == null || topic == null || !context.mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => QuizScreen(
+                      subject: subject,
+                      topic: topic,
+                      questionCount: null,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.play_circle_outline, color: AppColors.warning),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Yarımçıq qalmış test',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                          ),
+                          Text(
+                            '$subjectName · $topicName — sual ${currentIndex + 1}/$total',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.warning),
+                  ],
                 ),
               ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.warning.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.warning.withOpacity(0.3)),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.play_circle_outline, color: AppColors.warning),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Yarımçıq qalmış test',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                      ),
-                      Text(
-                        '$subjectName · $topicName — sual ${currentIndex + 1}/$total',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                    ],
+            Positioned(
+              top: -8,
+              left: -8,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  ProgressService.clearInProgress(subjectId, topicId);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
+                  child: const Icon(Icons.close, size: 14, color: Colors.white),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.warning),
-              ],
+              ),
             ),
-          ),
+          ],
         );
       },
     );

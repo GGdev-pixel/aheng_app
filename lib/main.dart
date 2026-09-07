@@ -13,12 +13,23 @@ import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 import 'widgets/study_plan_card.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'dart:ui';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  FlutterError.onError = (errorDetails) {
+    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+
   runApp(const AhengApp());
 }
 
