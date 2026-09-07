@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../screens/premium_screen.dart';
 
 class PremiumDialog {
   static Future<void> show(BuildContext context, {String? message}) {
@@ -39,7 +40,10 @@ class PremiumDialog {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    // TODO: Premium alış ekranına keçid (hazır olduqda)
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PremiumScreen()),
+                    );
                   },
                   child: const Text('Premium haqqında'),
                 ),
